@@ -4,7 +4,9 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"time"
+	"fmt"
 	"os"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -23,5 +25,18 @@ func setLogger() {
 
 func main() {
 	setLogger()
-	log.Info().Msgf("Starting Bruce (Version: %s)", version)
+	
+	app := &cli.App{
+		Name:  "bruce",
+		Usage: "specify a configuration file to be used.",
+		Action: func(*cli.Context) error {
+			fmt.Println("Batman has nothing on me!")
+			return nil
+		},
+	}
+	
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal().Err(err)
+	}
+	//log.Info().Msgf("Starting Bruce (Version: %s)", version)
 }
