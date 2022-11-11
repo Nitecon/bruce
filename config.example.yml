@@ -4,7 +4,7 @@ preExecCmds:
   - echo 'hi there' > /tmp/logExample
 packageList:
   - netcat
-  - bindutils
+  - bind-utils|apt=bind9-utils
 templates:
 - localLocation: /tmp/local_template_1.tpl
   perms: 0664

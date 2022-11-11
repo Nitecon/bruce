@@ -6,7 +6,7 @@ func init() {
 
 }
 
-func RunDaemonReload(svc string) error {
+func RunRestart(svc string) error {
 
 	return nil
 }

@@ -34,7 +34,7 @@ func dump(field interface{}) string {
 func doFileBackup(backupDir, srcName string) (string, error) {
 	source, err := os.Open(srcName)
 	if err != nil {
-		log.Info().Msgf("source file doesn't exist, cannot backup: %s", srcName)
+		log.Debug().Msgf("source file doesn't exist, cannot backup: %s", srcName)
 		return "", err
 	}
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
@@ -61,7 +61,7 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 			return "", err
 		}
 	}
-	log.Debug().Msgf("completed backup of [%s] to: %s", srcName, backupFileName)
+	log.Info().Msgf("completed backup of [%s] to: %s", srcName, backupFileName)
 	return srcName, nil
 }
 
@@ -211,6 +211,7 @@ func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode)
 		log.Err(err).Msgf("could not write template for: %s", local)
 		return err
 	}
+	log.Info().Msgf("completed template update: %s", local)
 	return nil
 }
 

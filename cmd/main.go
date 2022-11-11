@@ -2,6 +2,8 @@ package main
 
 import (
 	"bruce/handlers"
+	"bruce/packages"
+	"bruce/system"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -26,7 +28,8 @@ func setLogger() {
 
 func main() {
 	setLogger()
-
+	system.InitSysInfo()
+	packages.DoPackageManagerUpdate()
 	app := &cli.App{
 		Name:  "bruce",
 		Usage: "By default will load config from /etc/bruce/config.yml",

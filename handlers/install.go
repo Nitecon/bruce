@@ -37,12 +37,12 @@ func Install(cfgf, arg string) error {
 	log.Debug().Msg("complete template setup")
 	// run the systemd enablement / restarts etc
 	log.Debug().Msg("starting package installs")
-	for _, p := range cfg.InstallPackages {
-		err := packages.RunPackageInstall(p)
-		if err != nil {
-			log.Error().Err(err).Msg("could not install packages")
-		}
+
+	err = packages.RunPackageInstall(cfg.InstallPackages)
+	if err != nil {
+		log.Error().Err(err).Msg("could not install packages")
 	}
+
 	log.Debug().Msg("package installs complete")
 
 	// post execution commands are next
@@ -50,7 +50,7 @@ func Install(cfgf, arg string) error {
 	// now we do cleanup of our backup directories if everything went well!
 	err = os.RemoveAll(backupDir)
 	if err != nil {
-		log.Info().Msgf("could not remove backup directory, user removed?: ", backupDir)
+		log.Info().Msgf("could not remove backup directory, user removed?: %s", backupDir)
 	}
 	return nil
 }

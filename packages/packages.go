@@ -1,99 +1,81 @@
 package packages
 
 import (
+	"bruce/system"
 	"fmt"
 	"github.com/rs/zerolog/log"
-	"os/exec"
-	"runtime"
 	"strings"
 )
 
-var (
-	packageHandler    = ""
-	hasAlreadyUpdated = false
-	curUser           = ""
-	pfxCmd            = ""
-)
-
-func init() {
-	if runtime.GOOS == "linux" {
-		cmd := exec.Command("whoami")
-		d, err := cmd.CombinedOutput()
-		if err == nil {
-			curUser = strings.TrimSpace(string(d))
-			log.Debug().Msgf("using package manager: %s", packageHandler)
-		}
-		if curUser != "root" {
-			pfxCmd = "sudo"
-			log.Debug().Msgf("package installs may fail, you're not root: %s", curUser)
-		}
-		cmd = exec.Command("which", "yum")
-		d, err = cmd.CombinedOutput()
-		if err == nil {
-			packageHandler = strings.TrimSpace(string(d))
-			log.Debug().Msgf("using package manager: %s", packageHandler)
-			return
-		}
-		cmd = exec.Command("which", "apt")
-		d, err = cmd.CombinedOutput()
-		if err == nil {
-			packageHandler = strings.TrimSpace(string(d))
-			log.Debug().Msgf("using package manager: %s", packageHandler)
-			return
-		}
-		cmd = exec.Command("which", "dnf")
-		d, err = cmd.CombinedOutput()
-		if err == nil {
-			packageHandler = strings.TrimSpace(string(d))
-			log.Debug().Msgf("using package manager: %s", packageHandler)
-			return
-		}
-	}
-}
-func checkDebPackageInstalled(pkg string) bool {
-	if pkg == "" {
-		log.Debug().Msg("can't check for nothing")
+func InstallOSPackage(pkgs []string) bool {
+	if len(pkgs) < 1 {
+		log.Error().Err(fmt.Errorf("can't install nothing"))
 		return false
 	}
-	log.Debug().Msgf("looking for %s package", pkg)
-	cmd := exec.Command("/usr/bin/dpkg-query", "-s", pkg)
-	d, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Debug().Err(err).Msgf("error getting info on: %s", string(d))
-		return false
+	switch system.GetSysInfo().PackageHandler {
+	case "apt":
+		return installAptPackage(GetManagerPackages(pkgs, "apt"))
+	case "yum":
+		return installYumPackage(GetManagerPackages(pkgs, "yum"))
+	case "dnf":
+		return installDnfPackage(GetManagerPackages(pkgs, "dnf"))
 	}
-	if strings.Contains(strings.ToLower(string(d)), "is not installed") {
-		return false
-	}
-	return true
+	log.Info().Msg("no package manager to check for installed package")
+	return false
 }
 
-func RunPackageInstall(pkg string) error {
-	if packageHandler != "" {
-		if !hasAlreadyUpdated {
-			d, err := exec.Command(pfxCmd, packageHandler, "update", "-y").CombinedOutput()
-			if err != nil {
-				log.Debug().Msgf("error updating packages with (%s): %s", packageHandler, string(d))
-				return err
+func GetManagerPackages(pkgs []string, manager string) []string {
+	var newList []string
+	for _, pkg := range pkgs {
+		if strings.Contains(pkg, "|") {
+			managerList := strings.Split(pkg, "|")
+			var basePackage = ""
+			var usablePackage = ""
+			for _, mpkg := range managerList {
+				if strings.Contains(mpkg, "=") {
+					pmSplit := strings.Split(mpkg, "=")
+					if pmSplit[0] == manager {
+						usablePackage = pmSplit[1]
+					}
+				} else {
+					basePackage = mpkg
+				}
 			}
-			hasAlreadyUpdated = true
-			log.Debug().Msgf("successfully updated %s", packageHandler)
+			if usablePackage != "" {
+				newList = append(newList, usablePackage)
+			} else {
+				newList = append(newList, basePackage)
+			}
 		}
-		if checkDebPackageInstalled(pkg) {
-			log.Info().Msgf("%s is already installed...", pkg)
-			return nil
-		}
-		log.Debug().Msgf("package [%s] not installed... installing now", pkg)
-		d, err := exec.Command(pfxCmd, packageHandler, "install", "-y", pkg).CombinedOutput()
-		if err == nil {
-			log.Debug().Msgf("package installed: %s", string(d))
-		}
-		if strings.Contains(strings.ToLower(string(d)), "unable to locate") {
-			perr := fmt.Errorf("no install candidate for %s on %s", pkg, packageHandler)
-			log.Error().Err(perr).Msgf("package %s does not exist with %s", pkg, packageHandler)
-			return perr
-		}
-		log.Debug().Msgf("install output: %s", d)
 	}
+	return newList
+}
+
+func DoPackageManagerUpdate() bool {
+	updateComplete := false
+	switch system.GetSysInfo().PackageHandler {
+	case "apt":
+		updateComplete = updateApt()
+		break
+	case "yum":
+		updateComplete = updateYum()
+		break
+	case "dnf":
+		updateComplete = updateDnf()
+		break
+	}
+	system.SetPackageMangerUpdated(updateComplete)
+	if !updateComplete {
+		log.Info().Msg("no package manager to check for installed package")
+	}
+	return false
+}
+
+func RunPackageInstall(pkgs []string) error {
+	if InstallOSPackage(pkgs) {
+		log.Info().Msgf("[%s] installed", pkgs)
+	}
+
+	log.Error().Err(fmt.Errorf("failed to install [%s]", pkgs))
 	return nil
 }
