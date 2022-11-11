@@ -1,18 +1,25 @@
 ---
+tempDirectory: /tmp/bruce
+preExecCmds:
+  - echo 'hi there' > /tmp/logExample
 packageList:
   - netcat
   - bindutils
 templates:
-- localLocation: /tmp/testmytemplate.tpl
-  remoteLocation: https://s3.amazonaws.com/somebucket/testtemplate.tpl
+- localLocation: /tmp/local_template_1.tpl
+  perms: 0664
+  remoteLocation: ./examples/test_template_1.yml
   vars:
-    type: command
-    output: dd if=/dev/urandom bs=5 count=1
+  - type: command
+    output: /usr/bin/ls -alh /tmp/bruce/
     variable: REPLACE_ME_1
-- localLocation: /tmp/testanothertemplate.tpl
-  remoteLocation: https://s3.amazonaws.com/somebucket/testtemplate2.tpl
+  - type: value
+    output: hi there
+    variable: REPLACE_ME_2
+- localLocation: /tmp/local_template_2.tpl
+  remoteLocation: ./examples/test_template_2.yml
   vars:
-    type: value
+  - type: value
     output: FOOTHEBARBAZ
     variable: REPLACE_ME_2
 services:
@@ -20,11 +27,15 @@ services:
   setEnabled: yes
   state: started
   restartTrigger:
-    - /tmp/testmytemplate.tpl
+    - /tmp/local_template_1.tpl
+  failRevertTemplate:
+    - /tmp/local_template_1.tpl
   restartAlways: no
 - name: apache
   setEnabled: yes
   state: started
   restartTrigger:
-    - /tmp/testmytemplate.tpl
+    - /tmp/local_template_2.tpl
   restartAlways: no
+postExecCmds:
+  - echo "completed execution" > /tmp/logExample
