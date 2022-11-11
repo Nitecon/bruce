@@ -1,8 +1,8 @@
 package templates
 
 import (
-	"bruce/config"
 	"bruce/loader"
+	"bruce/system"
 	"bytes"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"sync"
 	"text/template"
 )
 
@@ -61,7 +60,7 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 			return "", err
 		}
 	}
-	log.Info().Msgf("completed backup of [%s] to: %s", srcName, backupFileName)
+	log.Info().Msgf("completed backup of %s to: %s", srcName, backupFileName)
 	return srcName, nil
 }
 
@@ -115,21 +114,17 @@ func RestoreBackupFile(backupDir, srcName string) error {
 }
 
 // BackupLocal will first create a backup of all existing templates so we can revert if need be
-func BackupLocal(backupDir string, tpls []config.ActionTemplate) error {
+func BackupLocal(backupDir string, tpls []system.ActionTemplate) error {
 	// Backup dir should already exist so we can just check if file exists and make a backup
-	wg := sync.WaitGroup{}
+
 	for _, t := range tpls {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			log.Debug().Msgf("local backup started for: %s", t.LocalLocation)
-			_, err := doFileBackup(backupDir, t.LocalLocation)
-			if err != nil {
-				log.Debug().Msgf("file backup failed as the local file doesn't exist yet: %s", err.Error())
-			}
-		}()
+		log.Debug().Msgf("local backup started for: %s", t.LocalLocation)
+		_, err := doFileBackup(backupDir, t.LocalLocation)
+		if err != nil {
+			log.Debug().Msgf("file backup failed as the local file doesn't exist yet: %s", err.Error())
+		}
 	}
-	wg.Wait()
+
 	return nil
 }
 
@@ -142,7 +137,7 @@ func loadTemplateFromRemote(remoteLoc string) (*template.Template, error) {
 	return template.New(path.Base(remoteLoc)).Parse(string(d))
 }
 
-func loadTemplateValue(v config.Vars) string {
+func loadTemplateValue(v system.Vars) string {
 	if v.Type == "value" {
 		return v.Output
 	}
@@ -178,7 +173,7 @@ func loadTemplateValue(v config.Vars) string {
 	return ""
 }
 
-func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode) error {
+func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode) error {
 	// we have the backup so now we can delete the file if it exists
 	_, err := os.Stat(local)
 	if os.IsNotExist(err) {
@@ -216,9 +211,9 @@ func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode)
 }
 
 // RenderTemplates post backup this renders the templates that have been loaded.
-func RenderTemplates(tpls []config.ActionTemplate) {
+func RenderTemplates() {
 	//wg := sync.WaitGroup{}
-	for _, tpl := range tpls {
+	for _, tpl := range system.GetSysInfo().Configuration.Templates {
 		err := doTemplateExec(tpl.LocalLocation, tpl.RemoteLocation, tpl.Variables, tpl.Permissions)
 		if err != nil {
 			log.Debug().Err(err).Msgf("could not execute template: %s", tpl.LocalLocation)

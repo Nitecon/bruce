@@ -71,7 +71,8 @@ func DoPackageManagerUpdate() bool {
 	return false
 }
 
-func RunPackageInstall(pkgs []string) error {
+func RunPackageInstall() error {
+	pkgs := system.GetSysInfo().Configuration.InstallPackages
 	if InstallOSPackage(pkgs) {
 		log.Info().Msgf("[%s] installed", pkgs)
 	}

@@ -21,6 +21,7 @@ type SysInfo struct {
 	PackageHandlerPath    string
 	PackageManagerUpdated bool
 	SystemType            string
+	Configuration         *BruceConfig
 }
 
 func SetPackageMangerUpdated(isUpdated bool) {

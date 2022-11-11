@@ -8,6 +8,8 @@ packageList:
 templates:
 - localLocation: /tmp/local_template_1.tpl
   perms: 0664
+  owner: whattingh
+  group: whattingh
   remoteLocation: ./examples/test_template_1.yml
   vars:
   - type: command
@@ -18,6 +20,9 @@ templates:
     variable: REPLACE_ME_2
 - localLocation: /tmp/local_template_2.tpl
   remoteLocation: ./examples/test_template_2.yml
+  owner: whattingh
+  group: whattingh
+  perms: 0664
   vars:
   - type: value
     output: FOOTHEBARBAZ

@@ -1,10 +1,12 @@
-package config
+package system
 
 import (
 	"bruce/loader"
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"io/fs"
+	"os"
 )
 
 // BruceConfig will be marshalled from the provided config file that exists.
@@ -15,6 +17,7 @@ type BruceConfig struct {
 	Templates       []ActionTemplate `yaml:"templates"`
 	Services        []Services       `yaml:"services"`
 	PostExecCmds    []string         `yaml:"postExecCmds"`
+	BackupDir       string
 }
 
 // ActionTemplate provides the local and remote files to be used.
@@ -59,12 +62,14 @@ func LoadConfig(fileName string) (*BruceConfig, error) {
 	}
 	log.Debug().Interface("config", c)
 	// setup some defaults
-	/*for _, temps := range c.Templates {
-		for _, v := range temps.Variables {
-			if v.Permissions == 0 {
-				v.Permissions = 0664
-			}
+	for _, temps := range c.Templates {
+		if temps.Permissions == 0 {
+			temps.Permissions = 0664
 		}
-	}*/
+	}
+	c.TempDir = fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "bruce")
+	info := GetSysInfo()
+	info.Configuration = c
+	SetSysInfo(info)
 	return c, nil
 }

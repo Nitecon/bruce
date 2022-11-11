@@ -46,7 +46,8 @@ func main() {
 				Aliases: []string{"i"},
 				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
 				Action: func(cCtx *cli.Context) error {
-					handlers.Install(cCtx.String("config"), cCtx.Args().First())
+					system.LoadConfig(cCtx.String("config"))
+					handlers.Install(cCtx.Args().First())
 					return nil
 				},
 			},
