@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bruce/config"
+	"bruce/packages"
 	"bruce/templates"
 	"fmt"
 	"github.com/rs/zerolog/log"
@@ -31,9 +32,18 @@ func Install(cfgf, arg string) error {
 		log.Info().Err(err).Msg("backup failed... okay to continue?")
 	}
 	// now install the list of packages
+	log.Debug().Msg("starting template setup")
 	templates.RenderTemplates(cfg.Templates)
-
+	log.Debug().Msg("complete template setup")
 	// run the systemd enablement / restarts etc
+	log.Debug().Msg("starting package installs")
+	for _, p := range cfg.InstallPackages {
+		err := packages.RunPackageInstall(p)
+		if err != nil {
+			log.Error().Err(err).Msg("could not install packages")
+		}
+	}
+	log.Debug().Msg("package installs complete")
 
 	// post execution commands are next
 
