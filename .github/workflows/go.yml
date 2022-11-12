@@ -1,0 +1,50 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}   # checkout the correct branch name
+          fetch-depth: 0                # fetch the whole repo history
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 'lts/*'
+
+      - name: Setup semantic-release
+        run: npm install -g semantic-release
+
+      - name: Install semantic release plugin(changelog)
+        run: npm install @semantic-release/git @semantic-release/changelog -D
+
+      - name: Retrieve release info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release --dry-run --no-ci --branches main > release_info.txt
+
+      - name: List workspace
+        run: ls -alh
+
+      - name: Make binaries
+        uses: Nitecon/actions/golang@main
+        env:
+          APP_NAME: "bruce"
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release --no-ci --branches main
+
+      #- name: Test
+      #  run: go test -v ./...
