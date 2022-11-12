@@ -4,11 +4,14 @@ import (
 	"bruce/loader"
 	"bruce/system"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/rs/zerolog/log"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -22,6 +25,9 @@ var (
 		"contains": strings.Contains,
 		"dump":     func(field interface{}) string { return dump(field) },
 	}
+	originalHashes    = make(map[string]string)
+	changedHashes     = make(map[string]string)
+	modifiedTemplates []string
 )
 
 func dump(field interface{}) string {
@@ -34,8 +40,14 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 	source, err := os.Open(srcName)
 	if err != nil {
 		log.Debug().Msgf("source file doesn't exist, cannot backup: %s", srcName)
+		originalHashes[srcName] = "none"
 		return "", err
 	}
+	hash, err := getFileChecksum(srcName)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to generate file checksum")
+	}
+	originalHashes[srcName] = hash
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
 	err = os.MkdirAll(path.Dir(backupFileName), 0775)
 	if err != nil {
@@ -61,11 +73,13 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 		}
 	}
 	log.Info().Msgf("completed backup of %s to: %s", srcName, backupFileName)
+
 	return srcName, nil
 }
 
-func RestoreBackupFile(backupDir, srcName string) error {
+func RestoreBackupFile(srcName string) error {
 	log.Debug().Msgf("preparing to restore: %s", srcName)
+	backupDir := system.GetSysInfo().Configuration.BackupDir
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
 	_, err := os.Stat(backupFileName)
 	if os.IsNotExist(err) {
@@ -109,14 +123,13 @@ func RestoreBackupFile(backupDir, srcName string) error {
 			return err
 		}
 	}
-	log.Debug().Msgf("completed restore of [%s] to: %s", backupFileName, srcName)
+	log.Info().Msgf("completed restore of [%s] to: %s", backupFileName, srcName)
 	return nil
 }
 
 // BackupLocal will first create a backup of all existing templates so we can revert if need be
 func BackupLocal(backupDir string, tpls []system.ActionTemplate) error {
 	// Backup dir should already exist so we can just check if file exists and make a backup
-
 	for _, t := range tpls {
 		log.Debug().Msgf("local backup started for: %s", t.LocalLocation)
 		_, err := doFileBackup(backupDir, t.LocalLocation)
@@ -126,6 +139,16 @@ func BackupLocal(backupDir string, tpls []system.ActionTemplate) error {
 	}
 
 	return nil
+}
+
+func getFileChecksum(fname string) (string, error) {
+	hasher := sha256.New()
+	s, err := ioutil.ReadFile(fname)
+	hasher.Write(s)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func loadTemplateFromRemote(remoteLoc string) (*template.Template, error) {
@@ -207,6 +230,11 @@ func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode)
 		return err
 	}
 	log.Info().Msgf("completed template update: %s", local)
+	hash, err := getFileChecksum(local)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to get new file checksum")
+	}
+	changedHashes[local] = hash
 	return nil
 }
 
@@ -226,4 +254,21 @@ func RenderTemplates() {
 			}()*/
 	}
 	//wg.Wait()
+	ValidateChanged()
+}
+
+func ValidateChanged() {
+	for nc, ctpl := range changedHashes {
+		for no, otpl := range originalHashes {
+			if nc == no {
+				if ctpl != otpl {
+					modifiedTemplates = append(modifiedTemplates, no)
+				}
+			}
+		}
+	}
+}
+
+func GetModifiedTemplates() []string {
+	return modifiedTemplates
 }

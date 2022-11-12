@@ -38,14 +38,14 @@ func Install(arg string) error {
 	log.Debug().Msg("package installs complete")
 
 	// run the systemd enablement / restarts etc
-	svcs, err := services.StartOSServiceExecution()
-	if err != nil {
+	svcs := services.StartOSServiceExecution()
+
+	if len(svcs) > 0 {
 		log.Info().Msgf("restoring services & associated templates: %s", svcs)
 		rerr := services.RestoreFailedServices(svcs)
 		if rerr != nil {
 			log.Error().Err(err).Msg("could not install packages")
 		}
-
 	}
 	// post execution commands are next
 	StartPostExecCmds()

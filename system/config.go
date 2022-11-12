@@ -39,12 +39,11 @@ type Vars struct {
 
 // Services are the list of services that must be set up as required.
 type Services struct {
-	Name             string   `yaml:"name"`
-	Enabled          bool     `yaml:"setEnabled"`
-	State            string   `yaml:"state"`
-	RestartOnUpdate  []string `yaml:"restartTrigger"`
-	OnFailRevertTPLs []string `yaml:"failRevertTemplate"`
-	RestartAlways    bool     `yaml:"restartAlways"`
+	Name            string   `yaml:"name"`
+	Enabled         bool     `yaml:"setEnabled"`
+	State           string   `yaml:"state"`
+	RestartOnUpdate []string `yaml:"restartTrigger"`
+	RestartAlways   bool     `yaml:"restartAlways"`
 }
 
 // LoadConfig attempts to load the user provided manifest.

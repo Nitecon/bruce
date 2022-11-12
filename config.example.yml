@@ -33,14 +33,10 @@ services:
   state: started
   restartTrigger:
     - /tmp/local_template_1.tpl
-  failRevertTemplate:
-    - /tmp/local_template_1.tpl
   restartAlways: no
 - name: apache
   setEnabled: yes
   state: started
-  restartTrigger:
-    - /tmp/local_template_2.tpl
   restartAlways: no
 postExecCmds:
   - echo "completed execution" > /tmp/logExample

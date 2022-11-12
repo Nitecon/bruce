@@ -22,6 +22,16 @@ type SysInfo struct {
 	PackageManagerUpdated bool
 	SystemType            string
 	Configuration         *BruceConfig
+	ServiceController     string
+	ServiceControllerPath string
+	CanUpdateServices     bool
+	ChangedTemplates      []string
+}
+
+func AddChangedTemplate(t string) {
+	si := GetSysInfo()
+	si.ChangedTemplates = append(si.ChangedTemplates, t)
+	SetSysInfo(si)
 }
 
 func SetPackageMangerUpdated(isUpdated bool) {
@@ -57,8 +67,24 @@ func InitSysInfo() *SysInfo {
 		cfg.PackageHandlerPath = GetLinuxPackageHandler()
 		cfg.PackageHandler = path.Base(cfg.PackageHandlerPath)
 		cfg.SystemType = "linux"
+		svcInfo, err := GetLinuxServiceController()
+		if err != nil {
+			cfg.CanUpdateServices = false
+		} else {
+			cfg.ServiceControllerPath = svcInfo
+			cfg.ServiceController = path.Base(svcInfo)
+		}
 	}
 	return SetSysInfo(cfg)
+}
+
+func GetLinuxServiceController() (string, error) {
+	// We only support systemctl for now
+	sysPath := exe.HasExecInPath("systemctl")
+	if sysPath == "" {
+		return "", fmt.Errorf("systemctl not found on this system")
+	}
+	return sysPath, nil
 }
 
 func GetLinuxPackageHandler() string {
