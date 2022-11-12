@@ -33,7 +33,7 @@ func StartOSServiceExecution() []string {
 		for _, svc := range system.GetSysInfo().Configuration.Services {
 			status := exe.Run(fmt.Sprintf("systemctl is-active %s", svc.Name), system.GetSysInfo().TrySudo).Get()
 			if strings.Contains(strings.ToLower(status), "could not be found") {
-				log.Error().Err(fmt.Errorf("%s service not found")).Msg("service does not exist cannot manage state")
+				log.Error().Err(fmt.Errorf("%s service not found", svc.Name)).Msg("service does not exist cannot manage state")
 				continue
 			}
 			if svc.Enabled {

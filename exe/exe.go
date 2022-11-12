@@ -14,7 +14,6 @@ type Execution struct {
 	fields      []string
 	useSudo     bool
 	outputStr   string
-	errorStr    string
 	isError     bool
 	cmnd        string
 	args        []string
@@ -42,7 +41,7 @@ func Run(c string, useSudo bool) *Execution {
 	}
 	e.outputStr = strings.TrimSuffix(strings.TrimLeft(strings.TrimRight(string(d), " "), " "), "\n")
 	if err != nil {
-		e.errorStr = strings.TrimSuffix(strings.TrimLeft(strings.TrimRight(err.Error(), " "), " "), "\n")
+		e.err = fmt.Errorf("%s", strings.TrimSuffix(strings.TrimLeft(strings.TrimRight(err.Error(), " "), " "), "\n"))
 	}
 	return e
 }
@@ -54,10 +53,10 @@ func (e *Execution) Failed() bool {
 
 // ContainsLC will check if either the output or error strings contain a value all lower case.
 func (e *Execution) ContainsLC(c string) bool {
-	if strings.Contains(strings.ToLower(e.outputStr), c) {
+	if strings.Contains(strings.ToLower(e.Get()), c) {
 		return true
 	}
-	if strings.Contains(strings.ToLower(e.errorStr), c) {
+	if strings.Contains(strings.ToLower(e.GetErrStr()), c) {
 		return true
 	}
 	return false
@@ -70,7 +69,7 @@ func (e *Execution) Get() string {
 
 // GetErrStr will return the currently populated error output string even if it's empty
 func (e *Execution) GetErrStr() string {
-	return e.errorStr
+	return e.err.Error()
 }
 
 // GetErr will return the actual error
@@ -94,23 +93,31 @@ func (e *Execution) RegexMatch() bool {
 		log.Error().Err(fmt.Errorf("chain this after SetRegex(re string)")).Msg("use SetRegex first")
 		return false
 	}
-	if e.regex.MatchString(e.outputStr) {
+	if e.regex.MatchString(e.Get()) {
 		return true
 	}
-	if e.regex.MatchString(e.errorStr) {
+	if e.regex.MatchString(e.GetErrStr()) {
 		return true
 	}
 	return false
 }
 
 func HasExecInPath(name string) string {
+	lookupCmd := ""
 	if runtime.GOOS == "linux" {
-		hasPkg := Run(fmt.Sprintf("which %s", name), false)
-		log.Debug().Msgf("Output of HasExec: %s", hasPkg.outputStr)
-		log.Debug().Msgf("Error of HasExec: %s", hasPkg.errorStr)
-		if hasPkg.Get() != "" {
-			return hasPkg.Get()
-		}
+		lookupCmd = "which"
 	}
+	if runtime.GOOS == "windows" {
+		// too much work to detect different shells so lets just assume where...
+		lookupCmd = "where"
+	}
+
+	hasPkg := Run(fmt.Sprintf("%s %s", lookupCmd, name), false)
+	log.Debug().Msgf("Output of HasExec: %s", hasPkg.Get())
+	log.Debug().Msgf("Error of HasExec: %s", hasPkg.GetErrStr())
+	if hasPkg.Get() != "" {
+		return hasPkg.Get()
+	}
+
 	return ""
 }
