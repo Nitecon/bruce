@@ -69,7 +69,10 @@ func (e *Execution) Get() string {
 
 // GetErrStr will return the currently populated error output string even if it's empty
 func (e *Execution) GetErrStr() string {
-	return e.err.Error()
+	if e.err != nil {
+		return e.err.Error()
+	}
+	return ""
 }
 
 // GetErr will return the actual error
