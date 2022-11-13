@@ -13,6 +13,7 @@ import (
 type BruceConfig struct {
 	TempDir         string           `yaml:"tempDirectory"`
 	PreExecCmds     []string         `yaml:"preExecCmds"`
+	PostInstallCmds []string         `yaml:"postInstallerCmds"`
 	InstallPackages []string         `yaml:"packageList"`
 	Templates       []ActionTemplate `yaml:"templates"`
 	Services        []Services       `yaml:"services"`

@@ -37,6 +37,10 @@ func Install(arg string) error {
 	}
 	log.Debug().Msg("package installs complete")
 
+	log.Debug().Msg("starting post package installation commands")
+	StartPostInstallCmds()
+	log.Debug().Msg("completed post package installation commands")
+
 	// run the systemd enablement / restarts etc
 	svcs := services.StartOSServiceExecution()
 

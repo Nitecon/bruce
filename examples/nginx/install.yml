@@ -1,0 +1,44 @@
+---
+preExecCmds:
+  - echo 'hi there' > /tmp/logExample
+packageList:
+  - openssl
+  - nginx
+postInstallerCmds:
+  - openssl req -new -newkey rsa:4096 -nodes -keyout /tmp/www.example.com.key -out /tmp/www.example.com.csr -subj "/C=US/ST=Virginia/L=Arlington/O=Dave/CN=www.example.com" && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout /tmp/www.example.com.key  -out /tmp/www.example.com.cert
+templates:
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
+    localLocation: /etc/nginx/nginx.conf
+    perms: 0664
+    owner: root
+    group: root
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
+    localLocation: /etc/nginx/vhosts/default.conf
+    owner: root
+    group: root
+    perms: 0664
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/example-ssl.conf
+    localLocation: /etc/nginx/vhosts/example-ssl.conf
+    owner: root
+    group: root
+    perms: 0664
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/var/www/html/index.html
+    localLocation: /var/www/html/index.html
+    owner: root
+    group: root
+    perms: 0664
+    vars:
+      - type: command
+        output: hostname -f
+        variable: HOSTNAME
+services:
+  - name: nginx
+    setEnabled: yes
+    state: started
+    restartTrigger:
+      - /etc/nginx/nginx.conf
+      - /etc/nginx/vhosts/default.conf
+      - /etc/nginx/vhosts/example-ssl.conf
+    restartAlways: no
+postExecCmds:
+  - echo "running..." > /tmp/bruce-log.log

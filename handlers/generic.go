@@ -18,6 +18,18 @@ func StartPreExecCmds() {
 		}
 	}
 }
+func StartPostInstallCmds() {
+	// start the post installation commands
+	for _, v := range system.GetSysInfo().Configuration.PostInstallCmds {
+		pc := exe.Run(v, false)
+		if pc.Failed() {
+			log.Error().Err(pc.GetErr()).Msg(pc.Get())
+		} else {
+			log.Info().Msgf("completed: %s", v)
+			log.Debug().Msgf("Output: %s", pc.Get())
+		}
+	}
+}
 
 func StartPostExecCmds() {
 	// start with pre execution cmds
