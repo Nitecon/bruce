@@ -23,11 +23,6 @@ func Install(arg string) error {
 
 	StartPreExecCmds()
 	CreateBackupLocation()
-	BackupExistingTemplates()
-
-	log.Debug().Msg("starting template setup")
-	templates.RenderTemplates()
-	log.Debug().Msg("complete template setup")
 
 	// run package installers
 	log.Debug().Msg("starting package installs")
@@ -36,6 +31,11 @@ func Install(arg string) error {
 		log.Error().Err(err).Msg("could not install packages")
 	}
 	log.Debug().Msg("package installs complete")
+	BackupExistingTemplates()
+
+	log.Debug().Msg("starting template setup")
+	templates.RenderTemplates()
+	log.Debug().Msg("complete template setup")
 
 	log.Debug().Msg("starting post package installation commands")
 	StartPostInstallCmds()
