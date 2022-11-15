@@ -21,3 +21,9 @@
 go.work
 .idea/
 .build/
+.terraform.*
+.tfstate.*
+.tfstate
+terraform.tfstate
+terraform.tfstate.*
+.terraform/

@@ -1,17 +1,14 @@
 package templates
 
 import (
+	"bruce/exe"
 	"bruce/loader"
 	"bruce/system"
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/rs/zerolog/log"
-	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -37,43 +34,17 @@ func dump(field interface{}) string {
 }
 
 func doFileBackup(backupDir, srcName string) (string, error) {
-	source, err := os.Open(srcName)
-	if err != nil {
-		log.Debug().Msgf("source file doesn't exist, cannot backup: %s", srcName)
-		originalHashes[srcName] = "none"
-		return "", err
-	}
-	hash, err := getFileChecksum(srcName)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to generate file checksum")
-	}
-	originalHashes[srcName] = hash
-	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
-	err = os.MkdirAll(path.Dir(backupFileName), 0775)
-	if err != nil {
-		log.Fatal().Err(err).Msgf("cannot create temporary storage dirs")
-	}
-	destination, err := os.Create(backupFileName)
-	if err != nil {
-		log.Error().Err(err).Msgf("could not create a backup file for: %s", backupFileName)
-		return "", err
-	}
-	defer destination.Close()
-	buf := make([]byte, 4096)
-	for {
-		n, err := source.Read(buf)
-		if err != nil && err != io.EOF {
-			return "", err
+	if exe.FileExists(srcName) {
+		hash, err := exe.GetFileChecksum(srcName)
+		if err != nil {
+			originalHashes[srcName] = hash
 		}
-		if n == 0 {
-			break
-		}
-		if _, err := destination.Write(buf[:n]); err != nil {
-			return "", err
+		backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
+		cerr := exe.CopyFile(srcName, backupFileName, true)
+		if cerr != nil {
+			log.Fatal().Err(cerr).Msgf("cannot create backup file: %s", backupFileName)
 		}
 	}
-	log.Info().Msgf("completed backup of %s to: %s", srcName, backupFileName)
-
 	return srcName, nil
 }
 
@@ -81,49 +52,13 @@ func RestoreBackupFile(srcName string) error {
 	log.Debug().Msgf("preparing to restore: %s", srcName)
 	backupDir := system.GetSysInfo().Configuration.BackupDir
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
-	_, err := os.Stat(backupFileName)
-	if os.IsNotExist(err) {
-		log.Info().Msgf("local backup file does not exist removing source to replicate original state for: %s", backupFileName)
-		_, exErr := os.Stat(srcName)
-		if os.IsNotExist(exErr) {
-			log.Info().Msgf("template that should exist does not, user removal?: %s", srcName)
-			return exErr
-		}
-		// we return early here as the original state has been restored already.
-		return os.Remove(srcName)
-
-	}
-	source, err := os.Open(backupFileName)
-	if err != nil {
-		log.Info().Msgf("backup source file doesn't exist: %s", srcName)
-		return err
-	}
-	defer source.Close()
-	srcInfo, err := source.Stat()
-	if err != nil {
-		log.Fatal().Msg("should not be an error to read the file info")
-
-	}
-	destination, err := os.OpenFile(srcName, os.O_RDWR|os.O_CREATE, srcInfo.Mode().Perm())
-	if err != nil {
-		log.Fatal().Err(err).Msgf("could not open backup file to write it to: %s", srcName)
-		return err
-	}
-	defer destination.Close()
-	buf := make([]byte, 4096)
-	for {
-		n, err := source.Read(buf)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if n == 0 {
-			break
-		}
-		if _, err := destination.Write(buf[:n]); err != nil {
+	if exe.FileExists(backupFileName) {
+		err := exe.CopyFile(backupFileName, srcName, false)
+		if err != nil {
+			log.Fatal().Err(err).Msgf("could not restore backup file")
 			return err
 		}
 	}
-	log.Info().Msgf("completed restore of [%s] to: %s", backupFileName, srcName)
 	return nil
 }
 
@@ -132,23 +67,17 @@ func BackupLocal(backupDir string, tpls []system.ActionTemplate) error {
 	// Backup dir should already exist so we can just check if file exists and make a backup
 	for _, t := range tpls {
 		log.Debug().Msgf("local backup started for: %s", t.LocalLocation)
-		_, err := doFileBackup(backupDir, t.LocalLocation)
-		if err != nil {
-			log.Debug().Msgf("file backup failed as the local file doesn't exist yet: %s", err.Error())
+		if exe.FileExists(t.LocalLocation) {
+			_, err := doFileBackup(backupDir, t.LocalLocation)
+			if err != nil {
+				log.Debug().Msgf("file backup failed : %s", err.Error())
+			}
+		} else {
+			log.Debug().Msgf("local file does not exist yet... skipping")
 		}
 	}
 
 	return nil
-}
-
-func getFileChecksum(fname string) (string, error) {
-	hasher := sha256.New()
-	s, err := ioutil.ReadFile(fname)
-	hasher.Write(s)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func loadTemplateFromRemote(remoteLoc string) (*template.Template, error) {
@@ -198,27 +127,22 @@ func loadTemplateValue(v system.Vars) string {
 
 func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode) error {
 	// we have the backup so now we can delete the file if it exists
-	_, err := os.Stat(local)
-	if os.IsNotExist(err) {
-		log.Debug().Msg("local file does not exist yet no need to delete")
-	} else {
-		rerr := os.Remove(local)
-		if rerr != nil {
-			log.Error().Err(rerr).Msg("could not delete the existing file, writes may have issues...")
-		}
+	if exe.FileExists(local) {
+		exe.DeleteFile(local)
 	}
 
 	log.Debug().Msgf("template exec starting on: %s", local)
 	t, err := loadTemplateFromRemote(remote)
 	if err != nil {
-		log.Err(err).Msgf("cannot render %s", local)
+		log.Err(err).Msgf("cannot read template source %s", local)
 		return err
 	}
 	var content = make(map[string]string)
 	for _, v := range vars {
 		content[v.Variable] = loadTemplateValue(v)
 	}
-	destination, err := os.OpenFile(local, os.O_RDWR|os.O_CREATE, perms)
+
+	destination, err := os.OpenFile(local, os.O_RDWR|os.O_CREATE, 0664)
 	if err != nil {
 		log.Error().Err(err).Msgf("could not open backup file to write it to: %s", local)
 		return err
@@ -226,11 +150,11 @@ func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode)
 	defer destination.Close()
 	err = t.Execute(destination, content)
 	if err != nil {
-		log.Err(err).Msgf("could not write template for: %s", local)
+		log.Err(err).Msgf("could not write template: %s", local)
 		return err
 	}
-	log.Info().Msgf("completed template update: %s", local)
-	hash, err := getFileChecksum(local)
+	log.Info().Msgf("template written: %s", local)
+	hash, err := exe.GetFileChecksum(local)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get new file checksum")
 	}

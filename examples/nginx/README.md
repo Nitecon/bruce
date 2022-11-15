@@ -11,34 +11,42 @@ This example should work fine on an intel nuc etc.  To understand how that is do
 
 # Step 1
 
-First download the ec2-userdata.txt file locally this will be used to bootstrap your ec2 with bruce.
+With the repository cloned you can make use of the terraform code which will create a public facing VPC with a single subnet to create a single
+ec2 t2.micro instance and attach the associated userdata to the instance.  Alternatively you can run the user-data script directly on an existing brand new ec2 instance
 
+
+# Step 2
+Validate what is happening on the ec2 instance by logging in (terraform code should output connect string)
+### Note: For examples I will use Key Name: Nitecon as I use separate tf script to quickly generate, make sure you are using a Key Name that exists within your aws account.
+
+Once logged into the system take a look at your cloudinit log details by running for example: 
 ```
-wget https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/ec2-userdata.txt
-```
-
-After you have configured ec2-userdata copy the text from below (after you have configured aws cli)
-
-Adjust the ssh key name / image id / subnets / sec groups etc to match your environment and then start up that instance
-
-```
-aws ec2 run-instances --image-id ami-09d3b3274b6c5d4aa --count 1 \
---instance-type t2.micro --key-name mynewkey \
---security-group-ids sg-0934ce3940ab515dc
---subnet-id subnet-052cc33d8f0f0c960 --user-data file://ec2-userdata.txt
+cat /var/log/cloud-init-output.log
 ```
 
-After your ec2 instance command create is completed you can now hook it up to a load balancer to view the output, or simply log onto the box and run:
+
+# Step 3
+After terraform completed and the instance stabilizes bruce should have installed everything on the system and you should be able to hit your public innstance via a browser.
+
 ```
-curl http://localhost/
+curl http://yourpublicIP/
 ```
 This should give you a redirect to https://localhost, so we know it's working correctly,
 Next is to view the output of the vhost that was configured with:
+
+
 
 ```
 curl --header 'Host: www.example.com' --insecure https://127.0.0.1
 ```
 
 Since the ssl cert we created is self signed we pass --insecure to make sure it loads.
+
+# Step 3
+Remember to clean up your test instance with something like:
+```
+aws ec2 terminate-instances --instance-id=i-08b84acafe719b932
+```
+
 
 - Enjoy

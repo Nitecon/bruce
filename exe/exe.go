@@ -1,9 +1,14 @@
 package exe
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/rs/zerolog/log"
+	"io"
+	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"runtime"
 	"strings"
@@ -20,6 +25,67 @@ type Execution struct {
 	regex       *regexp.Regexp
 	regexString string
 	err         error
+}
+
+func GetFileChecksum(fname string) (string, error) {
+	hasher := sha256.New()
+	s, err := os.ReadFile(fname)
+	hasher.Write(s)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func DeleteFile(src string) error {
+	err := os.Remove(src)
+	if err != nil {
+		log.Error().Err(err).Msgf("delete failure with: %s", src)
+		return err
+	}
+	return nil
+}
+
+func FileExists(src string) bool {
+	if _, err := os.Stat(src); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func CopyFile(src, dst string, makedirs bool) error {
+	source, err := os.Open(src)
+	if err != nil {
+		log.Debug().Msgf("copy fail, src does not exist: %s", src)
+		return err
+	}
+	if makedirs {
+		err = os.MkdirAll(path.Dir(dst), 0775)
+		if err != nil {
+			log.Error().Err(err).Msgf("cannot create directories for %s", dst)
+		}
+	}
+	destination, err := os.Create(dst)
+	if err != nil {
+		log.Error().Err(err).Msgf("copy fail, cannot create destination file: %s", dst)
+		return err
+	}
+	defer destination.Close()
+	buf := make([]byte, 4096)
+	for {
+		n, err := source.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		if _, err := destination.Write(buf[:n]); err != nil {
+			return err
+		}
+	}
+	log.Info().Msgf("copy complete %s to: %s", src, dst)
+	return nil
 }
 
 func Run(c string, useSudo bool) *Execution {
