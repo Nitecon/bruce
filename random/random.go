@@ -1,4 +1,4 @@
-package handlers
+package random
 
 import (
 	"math/rand"
@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-func RandDirName(n int) string {
+// String will return a random string based on the amount of characters passed in in.
+func String(n int) string {
 	const (
 		lettersToUse  = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		letterIdxBits = 6                    // 6 bits to represent a letter index

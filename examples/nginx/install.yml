@@ -1,24 +1,26 @@
 ---
 preExecCmds:
-  - echo 'hi there' > /tmp/logExample
+  - if [ -z $(which nginx) ]; then if [ -f /usr/bin/amazon-linux-extras ]; then /usr/bin/amazon-linux-extras enable nginx1; fi; fi
+  - mkdir -p /etc/nginx/vhosts/
 packageList:
   - openssl
   - nginx
 postInstallerCmds:
-  - openssl req -new -newkey rsa:4096 -nodes -keyout /tmp/www.example.com.key -out /tmp/www.example.com.csr -subj "/C=US/ST=Virginia/L=Arlington/O=Dave/CN=www.example.com" && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout /tmp/www.example.com.key  -out /tmp/www.example.com.cert
+  - if [ ! -f /tmp/www.example.com.cert ]; then openssl req -new -newkey rsa:4096 -nodes -keyout /tmp/www.example.com.key -out /tmp/www.example.com.csr -subj "/C=US/ST=Virginia/L=Arlington/O=Dave/CN=www.example.com" && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout /tmp/www.example.com.key  -out /tmp/www.example.com.cert; fi
 templates:
-  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
+  #- remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
+  - remoteLocation: /home/ec2-user/nginx.conf
     localLocation: /etc/nginx/nginx.conf
     perms: 0664
     owner: root
     group: root
-  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
+    vars:
+      - type: value
+        output: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
+        variable: NGINX_USER
+  #- remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
+  - remoteLocation: /home/ec2-user/default.conf
     localLocation: /etc/nginx/vhosts/default.conf
-    owner: root
-    group: root
-    perms: 0664
-  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/example-ssl.conf
-    localLocation: /etc/nginx/vhosts/example-ssl.conf
     owner: root
     group: root
     perms: 0664
@@ -31,6 +33,17 @@ templates:
       - type: command
         output: hostname -f
         variable: HOSTNAME
+chowns:
+  - type: file # can be file / dir
+    path: /tmp/www.example.com.key
+    owner: nginx|apt=www-data
+    group: nginx|apt=www-data
+    recursive: false
+  - type: file # can be file / dir
+    path: /tmp/www.example.com.cert
+    owner: nginx|apt=www-data
+    group: nginx|apt=www-data
+    recursive: false
 services:
   - name: nginx
     setEnabled: yes
@@ -38,7 +51,6 @@ services:
     restartTrigger:
       - /etc/nginx/nginx.conf
       - /etc/nginx/vhosts/default.conf
-      - /etc/nginx/vhosts/example-ssl.conf
     restartAlways: no
 postExecCmds:
-  - echo "running..." > /tmp/bruce-log.log
+  - echo "nginx should be ready"

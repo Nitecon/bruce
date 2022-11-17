@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bruce/config"
 	"bruce/handlers"
 	"bruce/packages"
-	"bruce/system"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -28,7 +28,7 @@ func setLogger() {
 
 func main() {
 	setLogger()
-	system.InitSysInfo()
+	config.InitSysInfo()
 	packages.DoPackageManagerUpdate()
 	app := &cli.App{
 		Name:  "bruce",
@@ -46,7 +46,7 @@ func main() {
 				Aliases: []string{"i"},
 				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
 				Action: func(cCtx *cli.Context) error {
-					system.LoadConfig(cCtx.String("config"))
+					config.LoadConfig(cCtx.String("config"))
 					handlers.Install(cCtx.Args().First())
 					return nil
 				},

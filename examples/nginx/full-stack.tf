@@ -3,7 +3,7 @@ module "networking" {
   region               = "us-east-1"
   environment          = "prod"
   vpc_cidr             = "10.0.0.0/16"
-  ec2-ami = "ami-0ff8a91507f77f867"
+  ec2-ami = "ami-09d3b3274b6c5d4aa"
   max-subnets = 1
 }
 

@@ -1,9 +1,9 @@
 package templates
 
 import (
+	"bruce/config"
 	"bruce/exe"
 	"bruce/loader"
-	"bruce/system"
 	"bytes"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
@@ -22,8 +22,6 @@ var (
 		"contains": strings.Contains,
 		"dump":     func(field interface{}) string { return dump(field) },
 	}
-	originalHashes    = make(map[string]string)
-	changedHashes     = make(map[string]string)
 	modifiedTemplates []string
 )
 
@@ -35,10 +33,6 @@ func dump(field interface{}) string {
 
 func doFileBackup(backupDir, srcName string) (string, error) {
 	if exe.FileExists(srcName) {
-		hash, err := exe.GetFileChecksum(srcName)
-		if err != nil {
-			originalHashes[srcName] = hash
-		}
 		backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
 		cerr := exe.CopyFile(srcName, backupFileName, true)
 		if cerr != nil {
@@ -50,7 +44,7 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 
 func RestoreBackupFile(srcName string) error {
 	log.Debug().Msgf("preparing to restore: %s", srcName)
-	backupDir := system.GetSysInfo().Configuration.BackupDir
+	backupDir := config.Get().Configuration.BackupDir
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
 	if exe.FileExists(backupFileName) {
 		err := exe.CopyFile(backupFileName, srcName, false)
@@ -62,8 +56,14 @@ func RestoreBackupFile(srcName string) error {
 	return nil
 }
 
+func GetBackupFileChecksum(src string) (string, error) {
+	backupDir := config.Get().Configuration.BackupDir
+	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(src, string(os.PathSeparator)))
+	return exe.GetFileChecksum(backupFileName)
+}
+
 // BackupLocal will first create a backup of all existing templates so we can revert if need be
-func BackupLocal(backupDir string, tpls []system.ActionTemplate) error {
+func BackupLocal(backupDir string, tpls []config.ActionTemplate) error {
 	// Backup dir should already exist so we can just check if file exists and make a backup
 	for _, t := range tpls {
 		log.Debug().Msgf("local backup started for: %s", t.LocalLocation)
@@ -89,9 +89,9 @@ func loadTemplateFromRemote(remoteLoc string) (*template.Template, error) {
 	return template.New(path.Base(remoteLoc)).Parse(string(d))
 }
 
-func loadTemplateValue(v system.Vars) string {
+func loadTemplateValue(v config.Vars) string {
 	if v.Type == "value" {
-		return v.Output
+		return config.GetValueForOSHandler(v.Output)
 	}
 	if v.Type == "command" {
 		var outb, errb bytes.Buffer
@@ -125,10 +125,15 @@ func loadTemplateValue(v system.Vars) string {
 	return ""
 }
 
-func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode) error {
+func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode) error {
 	// we have the backup so now we can delete the file if it exists
 	if exe.FileExists(local) {
 		exe.DeleteFile(local)
+	} else {
+		// check if the directories exist to render the file
+		if !exe.FileExists(path.Dir(local)) {
+			os.MkdirAll(path.Dir(local), 0775)
+		}
 	}
 
 	log.Debug().Msgf("template exec starting on: %s", local)
@@ -154,18 +159,25 @@ func doTemplateExec(local, remote string, vars []system.Vars, perms fs.FileMode)
 		return err
 	}
 	log.Info().Msgf("template written: %s", local)
-	hash, err := exe.GetFileChecksum(local)
+	localHash, err := exe.GetFileChecksum(local)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to get new file checksum")
 	}
-	changedHashes[local] = hash
+	backupHash, err := GetBackupFileChecksum(local)
+	if err != nil {
+		// no backup exists so lets add it as a changed template as it should be net new.
+		modifiedTemplates = append(modifiedTemplates, local)
+	}
+	if localHash != backupHash {
+		modifiedTemplates = append(modifiedTemplates, local)
+	}
 	return nil
 }
 
 // RenderTemplates post backup this renders the templates that have been loaded.
 func RenderTemplates() {
 	//wg := sync.WaitGroup{}
-	for _, tpl := range system.GetSysInfo().Configuration.Templates {
+	for _, tpl := range config.Get().Configuration.Templates {
 		err := doTemplateExec(tpl.LocalLocation, tpl.RemoteLocation, tpl.Variables, tpl.Permissions)
 		if err != nil {
 			log.Debug().Err(err).Msgf("could not execute template: %s", tpl.LocalLocation)
@@ -178,21 +190,9 @@ func RenderTemplates() {
 			}()*/
 	}
 	//wg.Wait()
-	ValidateChanged()
-}
-
-func ValidateChanged() {
-	for nc, ctpl := range changedHashes {
-		for no, otpl := range originalHashes {
-			if nc == no {
-				if ctpl != otpl {
-					modifiedTemplates = append(modifiedTemplates, no)
-				}
-			}
-		}
-	}
 }
 
 func GetModifiedTemplates() []string {
+	log.Debug().Msgf("modified templates: %s", modifiedTemplates)
 	return modifiedTemplates
 }

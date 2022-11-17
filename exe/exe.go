@@ -1,6 +1,8 @@
 package exe
 
 import (
+	"bruce/config"
+	"bruce/random"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -85,6 +87,32 @@ func CopyFile(src, dst string, makedirs bool) error {
 		}
 	}
 	log.Info().Msgf("copy complete %s to: %s", src, dst)
+	return nil
+}
+
+func EchoToFile(cmd string) string {
+	randFileName := fmt.Sprintf("%s%c%s.sh", config.Get().Configuration.TempDir, os.PathSeparator, random.String(16))
+	err := os.WriteFile(randFileName, []byte("#!/bin/sh\n"+cmd+"\n"), 0775)
+	if err != nil {
+		log.Error().Err(err).Msg("issue writing temp shell file")
+	}
+
+	return randFileName
+}
+
+func SetOwnership(item config.OwnerShip) error {
+	if config.Get().SystemType == "linux" {
+		// we'll use run command to chown things because it's much simpler:
+		cmd := "/usr/bin/chown"
+		if item.Object != "file" && item.Recursive {
+			cmd += fmt.Sprintf(" -R %s:%s %s", config.GetValueForOSHandler(item.Owner), config.GetValueForOSHandler(item.Group), item.Path)
+		} else {
+			cmd += fmt.Sprintf(" %s:%s %s", config.GetValueForOSHandler(item.Owner), config.GetValueForOSHandler(item.Group), item.Path)
+		}
+		out := Run(cmd, config.Get().TrySudo)
+		log.Debug().Msgf("chown output: %s", out.Get())
+		return out.GetErr()
+	}
 	return nil
 }
 
@@ -181,7 +209,7 @@ func HasExecInPath(name string) string {
 		lookupCmd = "where"
 	}
 
-	hasPkg := Run(fmt.Sprintf("%s %s", lookupCmd, name), false)
+	hasPkg := Run(fmt.Sprintf("%s %s", lookupCmd, name), config.Get().TrySudo)
 	log.Debug().Msgf("Output of HasExec: %s", hasPkg.Get())
 	log.Debug().Msgf("Error of HasExec: %s", hasPkg.GetErrStr())
 	if hasPkg.Get() != "" {
