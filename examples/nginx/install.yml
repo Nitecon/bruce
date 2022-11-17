@@ -8,8 +8,7 @@ packageList:
 postInstallerCmds:
   - if [ ! -f /tmp/www.example.com.cert ]; then openssl req -new -newkey rsa:4096 -nodes -keyout /tmp/www.example.com.key -out /tmp/www.example.com.csr -subj "/C=US/ST=Virginia/L=Arlington/O=Dave/CN=www.example.com" && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout /tmp/www.example.com.key  -out /tmp/www.example.com.cert; fi
 templates:
-  #- remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
-  - remoteLocation: /home/ec2-user/nginx.conf
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
     localLocation: /etc/nginx/nginx.conf
     perms: 0664
     owner: root
@@ -18,7 +17,6 @@ templates:
       - type: value
         output: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
         variable: NGINX_USER
-  #- remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
   - remoteLocation: /home/ec2-user/default.conf
     localLocation: /etc/nginx/vhosts/default.conf
     owner: root
@@ -34,6 +32,7 @@ templates:
         output: hostname -f
         variable: HOSTNAME
 chowns:
+  #Note this chown is just to show functionality in conjunction with preExecCmds where you potentially may want to do something in cmd and then set ownership prior to service restarts.
   - type: file # can be file / dir
     path: /tmp/www.example.com.key
     owner: nginx|apt=www-data
