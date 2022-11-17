@@ -11,13 +11,14 @@ This example should work fine on an intel nuc etc.  To understand how that is do
 
 # Step 1
 
-With the repository cloned you can make use of the terraform code which will create a public facing VPC with a single subnet to create a single
-ec2 t2.micro instance and attach the associated userdata to the instance.  Alternatively you can run the user-data script directly on an existing brand new ec2 instance
+With the repository cloned you can make use of the terraform code within this directory to spin up your own ec2 environment or just copy the ec2-userdata.sh contents and put it as part of an existing ec2 instance that you will spin up.
+The terraform code that is here as example will provision a vpc within a single region with a single public facing instance and include the userdata file to be run on instance initialization.
+The instance type is a t2.micro instance.  Alternatively you can run the user-data script directly on an intel nuc loaded with fedora / ubuntu as example.
 
 
 # Step 2
 Validate what is happening on the ec2 instance by logging in (terraform code should output connect string)
-### Note: For examples I will use Key Name: Nitecon as I use separate tf script to quickly generate, make sure you are using a Key Name that exists within your aws account.
+### Note: For examples I will use Key Name: Nitecon provision your own ssh key during tf instantiation or / use existing keys as appropriate.
 
 Once logged into the system take a look at your cloudinit log details by running for example: 
 ```
@@ -27,26 +28,5 @@ cat /var/log/cloud-init-output.log
 
 # Step 3
 After terraform completed and the instance stabilizes bruce should have installed everything on the system and you should be able to hit your public innstance via a browser.
-
-```
-curl http://yourpublicIP/
-```
-This should give you a redirect to https://localhost, so we know it's working correctly,
-Next is to view the output of the vhost that was configured with:
-
-
-
-```
-curl --header 'Host: www.example.com' --insecure https://127.0.0.1
-```
-
-Since the ssl cert we created is self signed we pass --insecure to make sure it loads.
-
-# Step 3
-Remember to clean up your test instance with something like:
-```
-aws ec2 terminate-instances --instance-id=i-08b84acafe719b932
-```
-
 
 - Enjoy

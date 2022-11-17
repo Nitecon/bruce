@@ -1,6 +1,6 @@
 ---
 preExecCmds:
-  - if [ -z $(which nginx) ]; then if [ -f /usr/bin/amazon-linux-extras ]; then /usr/bin/amazon-linux-extras enable nginx1; fi; fi
+  - if [ -f /usr/bin/amazon-linux-extras ]; then if [ ! -f /usr/sbin/nginx ]; then /usr/bin/amazon-linux-extras enable nginx1; fi; fi
   - mkdir -p /etc/nginx/vhosts/
 packageList:
   - openssl
@@ -17,7 +17,7 @@ templates:
       - type: value
         output: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
         variable: NGINX_USER
-  - remoteLocation: /home/ec2-user/default.conf
+  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
     localLocation: /etc/nginx/vhosts/default.conf
     owner: root
     group: root
