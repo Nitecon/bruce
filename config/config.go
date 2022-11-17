@@ -82,6 +82,7 @@ type Services struct {
 
 // LoadConfig attempts to load the user provided manifest.
 func LoadConfig(fileName string) (*BruceConfig, error) {
+	info := InitSysInfo()
 	d, err := loader.ReadRemoteFile(fileName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot read config file")
@@ -101,7 +102,6 @@ func LoadConfig(fileName string) (*BruceConfig, error) {
 		}
 	}
 	c.TempDir = fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "bruce")
-	info := Get()
 	info.Configuration = c
 	info.Save()
 	return c, nil

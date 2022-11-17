@@ -28,8 +28,7 @@ func setLogger() {
 
 func main() {
 	setLogger()
-	config.InitSysInfo()
-	packages.DoPackageManagerUpdate()
+
 	app := &cli.App{
 		Name:  "bruce",
 		Usage: "By default will load config from /etc/bruce/config.yml",
@@ -47,6 +46,7 @@ func main() {
 				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
 				Action: func(cCtx *cli.Context) error {
 					config.LoadConfig(cCtx.String("config"))
+					packages.DoPackageManagerUpdate()
 					handlers.Install(cCtx.Args().First())
 					return nil
 				},
