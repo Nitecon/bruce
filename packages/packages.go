@@ -20,12 +20,13 @@ func InstallOSPackage(pkgs []string) bool {
 		cfg.ServiceControllerPath = svcInfo
 		cfg.ServiceController = path.Base(svcInfo)
 	}
+	DoPackageManagerUpdate(cfg)
 	cfg.Save()
 	if len(pkgs) < 1 {
 		log.Error().Err(fmt.Errorf("can't install nothing"))
 		return false
 	}
-	switch config.Get().PackageHandler {
+	switch cfg.PackageHandler {
 	case "apt":
 		return installAptPackage(GetManagerPackages(pkgs, "apt"))
 	case "yum":
@@ -97,9 +98,8 @@ func GetManagerPackages(pkgs []string, manager string) []string {
 	return newList
 }
 
-func DoPackageManagerUpdate() bool {
+func DoPackageManagerUpdate(cfg *config.SysInfo) bool {
 	updateComplete := false
-	cfg := config.Get()
 	switch cfg.PackageHandler {
 	case "apt":
 		updateComplete = updateApt()
@@ -112,25 +112,14 @@ func DoPackageManagerUpdate() bool {
 		break
 	}
 	cfg.PackageManagerUpdated = updateComplete
-	cfg.Save()
 	if !updateComplete {
-		log.Info().Msg("no package manager to check for installed package")
+		log.Info().Msg("no package manager to check for installed package, during packaging update")
 	}
 	return false
 }
 
 func RunPackageInstall() error {
-	cfg := config.Get()
-	cfg.PackageHandlerPath = GetLinuxPackageHandler()
-	cfg.PackageHandler = path.Base(cfg.PackageHandlerPath)
-	svcInfo, err := GetLinuxServiceController()
-	if err != nil {
-		cfg.CanUpdateServices = false
-	} else {
-		cfg.ServiceControllerPath = svcInfo
-		cfg.ServiceController = path.Base(svcInfo)
-	}
-	cfg.Save()
+
 	pkgs := config.Get().Configuration.InstallPackages
 	if InstallOSPackage(pkgs) {
 		log.Info().Msgf("[%s] installed", pkgs)

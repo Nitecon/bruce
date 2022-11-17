@@ -3,7 +3,6 @@ package main
 import (
 	"bruce/config"
 	"bruce/handlers"
-	"bruce/packages"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -46,7 +45,6 @@ func main() {
 				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
 				Action: func(cCtx *cli.Context) error {
 					config.LoadConfig(cCtx.String("config"))
-					packages.DoPackageManagerUpdate()
 					handlers.Install(cCtx.Args().First())
 					return nil
 				},
