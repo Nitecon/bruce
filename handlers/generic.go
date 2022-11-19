@@ -22,6 +22,7 @@ func StartPreExecCmds() {
 		} else {
 			log.Info().Msgf("completed executing: %s", fileName)
 			log.Debug().Msgf("Output: %s", pc.Get())
+			os.Remove(fileName)
 		}
 	}
 }
@@ -41,6 +42,7 @@ func StartPostInstallCmds() {
 		} else {
 			log.Info().Msgf("completed executing: %s", fileName)
 			log.Debug().Msgf("Output: %s", pc.Get())
+			os.Remove(fileName)
 		}
 	}
 }
@@ -69,6 +71,7 @@ func StartPostExecCmds() {
 		} else {
 			log.Info().Msgf("completed executing: %s", fileName)
 			log.Debug().Msgf("Output: %s", pc.Get())
+			os.Remove(fileName)
 		}
 	}
 }
