@@ -92,12 +92,12 @@ func CopyFile(src, dst string, makedirs bool) error {
 
 func EchoToFile(cmd string) string {
 	randFileName := fmt.Sprintf("%s%c%s.sh", config.Get().Configuration.TempDir, os.PathSeparator, random.String(16))
-	if !FileExists(path.Dir(randFileName)) {
-		err := os.MkdirAll(path.Dir(path.Dir(randFileName)), 0775)
-		if err != nil {
-			log.Error().Err(err).Msgf("cannot create directories for %s", path.Dir(randFileName))
-		}
+	// Create the directory not just temp
+	err := os.MkdirAll(path.Dir(randFileName), 0775)
+	if err != nil {
+		log.Error().Err(err).Msgf("cannot create directories for %s", path.Dir(randFileName))
 	}
+
 	tempFile, err := os.Create(randFileName)
 	if err != nil {
 		log.Error().Err(err).Msgf("temp file creation failed for: %s", randFileName)
