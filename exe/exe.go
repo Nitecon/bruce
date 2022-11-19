@@ -103,13 +103,13 @@ func EchoToFile(cmd string) string {
 		log.Error().Err(err).Msgf("temp file creation failed for: %s", randFileName)
 		return ""
 	}
-	defer tempFile.Close()
 	size, err := tempFile.WriteString("#!/bin/sh\n" + cmd + "\n")
 	if err != nil {
 		log.Error().Err(err).Msgf("could not write cmd: %s to file %s", cmd, randFileName)
 		return ""
 	}
 	log.Debug().Msgf("wrote %db in %s", size, randFileName)
+	tempFile.Close()
 	return randFileName
 }
 

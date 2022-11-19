@@ -47,13 +47,12 @@ func StartOwnerships() {
 
 func StartPostExecCmds() {
 	// start with pre execution cmds
-
 	for _, v := range config.Get().Configuration.PostExecCmds {
 		fileName := exe.EchoToFile(v)
 		log.Debug().Msgf("executing local file: %s", fileName)
-		pc := exe.Run(fileName, false)
+		pc := exe.Run(fileName, config.Get().TrySudo)
 		if pc.Failed() {
-			log.Error().Err(pc.GetErr()).Msg(pc.Get())
+			log.Fatal().Err(pc.GetErr()).Msg(pc.Get())
 		} else {
 			log.Info().Msgf("completed executing: %s", fileName)
 			log.Debug().Msgf("Output: %s", pc.Get())
