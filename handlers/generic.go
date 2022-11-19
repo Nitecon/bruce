@@ -4,12 +4,17 @@ import (
 	"bruce/config"
 	"bruce/exe"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 func StartPreExecCmds() {
 	// start with pre execution cmds
 	for _, v := range config.Get().Configuration.PreExecCmds {
 		fileName := exe.EchoToFile(v)
+		err := os.Chmod(fileName, 0775)
+		if err != nil {
+			log.Fatal().Err(err).Msg("temp file must exist to continue")
+		}
 		log.Debug().Str("command", v).Msgf("executing local file: %s", fileName)
 		pc := exe.Run(fileName, false)
 		if pc.Failed() {
@@ -25,6 +30,10 @@ func StartPostInstallCmds() {
 	// start the post installation commands
 	for _, v := range config.Get().Configuration.PostInstallCmds {
 		fileName := exe.EchoToFile(v)
+		err := os.Chmod(fileName, 0775)
+		if err != nil {
+			log.Fatal().Err(err).Msg("temp file must exist to continue")
+		}
 		log.Debug().Msgf("executing local file: %s", fileName)
 		pc := exe.Run(fileName, false)
 		if pc.Failed() {
@@ -49,6 +58,10 @@ func StartPostExecCmds() {
 	// start with pre execution cmds
 	for _, v := range config.Get().Configuration.PostExecCmds {
 		fileName := exe.EchoToFile(v)
+		err := os.Chmod(fileName, 0775)
+		if err != nil {
+			log.Fatal().Err(err).Msg("temp file must exist to continue")
+		}
 		log.Debug().Msgf("executing local file: %s", fileName)
 		pc := exe.Run(fileName, config.Get().TrySudo)
 		if pc.Failed() {
