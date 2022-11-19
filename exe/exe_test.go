@@ -279,6 +279,30 @@ func TestExecution_Failed(t *testing.T) {
 	}
 }
 
+func TestHasExecInPath(t *testing.T) {
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "linux",
+			args: args{name: "foo"},
+			want: "INFO: Could not find files for the given pattern(s).\r",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := HasExecInPath(tt.args.name); got != tt.want {
+				t.Errorf("HasExecInPath() = \ngots %#v\nwant %#v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRun(t *testing.T) {
 	type args struct {
 		c       string
@@ -317,32 +341,8 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Run(tt.args.c, tt.args.useSudo); !reflect.DeepEqual(got) {
-				t.Errorf("Function Run()\n Got=%#v\n want%#v\nError: %s", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHasExecInPath(t *testing.T) {
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "linux",
-			args: args{name: "foo"},
-			want: "INFO: Could not find files for the given pattern(s).\r",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := HasExecInPath(tt.args.name); got != tt.want {
-				t.Errorf("HasExecInPath() = \ngots %#v\nwant %#v", got, tt.want)
+			if got := Run(tt.args.c, tt.args.useSudo); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Function Run()\n Got=%#v\n want%#v", got, tt.want)
 			}
 		})
 	}
