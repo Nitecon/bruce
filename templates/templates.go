@@ -44,7 +44,7 @@ func doFileBackup(backupDir, srcName string) (string, error) {
 
 func RestoreBackupFile(srcName string) error {
 	log.Debug().Msgf("preparing to restore: %s", srcName)
-	backupDir := config.Get().Configuration.BackupDir
+	backupDir := config.Get().Template.BackupDir
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(srcName, string(os.PathSeparator)))
 	if exe.FileExists(backupFileName) {
 		err := exe.CopyFile(backupFileName, srcName, false)
@@ -57,7 +57,7 @@ func RestoreBackupFile(srcName string) error {
 }
 
 func GetBackupFileChecksum(src string) (string, error) {
-	backupDir := config.Get().Configuration.BackupDir
+	backupDir := config.Get().Template.BackupDir
 	backupFileName := fmt.Sprintf("%s%c%s", backupDir, os.PathSeparator, strings.TrimLeft(src, string(os.PathSeparator)))
 	return exe.GetFileChecksum(backupFileName)
 }
@@ -177,7 +177,7 @@ func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode)
 // RenderTemplates post backup this renders the templates that have been loaded.
 func RenderTemplates() {
 	//wg := sync.WaitGroup{}
-	for _, tpl := range config.Get().Configuration.Templates {
+	for _, tpl := range config.Get().Template.Templates {
 		err := doTemplateExec(tpl.LocalLocation, tpl.RemoteLocation, tpl.Variables, tpl.Permissions)
 		if err != nil {
 			log.Debug().Err(err).Msgf("could not execute template: %s", tpl.LocalLocation)

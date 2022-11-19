@@ -14,10 +14,10 @@ func Install(arg string) error {
 	log.Debug().Msg("starting install task")
 
 	// Do initial cleanup of the backup dirs not after, so we have backups in case we need it!
-	if _, err := os.Stat(config.Get().Configuration.TempDir); os.IsExist(err) {
-		err := os.RemoveAll(config.Get().Configuration.TempDir)
+	if _, err := os.Stat(config.Get().Template.TempDir); os.IsExist(err) {
+		err := os.RemoveAll(config.Get().Template.TempDir)
 		if err != nil {
-			log.Info().Msgf("could not remove bruce temp directory, user removed?: %s", config.Get().Configuration.BackupDir)
+			log.Info().Msgf("could not remove bruce temp directory, user removed?: %s", config.Get().Template.BackupDir)
 		}
 	}
 

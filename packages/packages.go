@@ -98,7 +98,7 @@ func GetManagerPackages(pkgs []string, manager string) []string {
 	return newList
 }
 
-func DoPackageManagerUpdate(cfg *config.SysInfo) bool {
+func DoPackageManagerUpdate(cfg *config.AppData) bool {
 	updateComplete := false
 	switch cfg.PackageHandler {
 	case "apt":
@@ -120,7 +120,7 @@ func DoPackageManagerUpdate(cfg *config.SysInfo) bool {
 
 func RunPackageInstall() error {
 
-	pkgs := config.Get().Configuration.InstallPackages
+	pkgs := config.Get().Template.InstallPackages
 	if InstallOSPackage(pkgs) {
 		log.Info().Msgf("[%s] installed", pkgs)
 		return nil

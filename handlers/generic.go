@@ -9,7 +9,7 @@ import (
 
 func StartPreExecCmds() {
 	// start with pre execution cmds
-	for _, v := range config.Get().Configuration.PreExecCmds {
+	for _, v := range config.Get().Template.PreExecCmds {
 		fileName := exe.EchoToFile(v)
 		err := os.Chmod(fileName, 0775)
 		if err != nil {
@@ -29,7 +29,7 @@ func StartPreExecCmds() {
 
 func StartPostInstallCmds() {
 	// start the post installation commands
-	for _, v := range config.Get().Configuration.PostInstallCmds {
+	for _, v := range config.Get().Template.PostInstallCmds {
 		fileName := exe.EchoToFile(v)
 		err := os.Chmod(fileName, 0775)
 		if err != nil {
@@ -48,7 +48,7 @@ func StartPostInstallCmds() {
 }
 
 func StartOwnerships() {
-	for _, v := range config.Get().Configuration.OwnerShips {
+	for _, v := range config.Get().Template.OwnerShips {
 		err := exe.SetOwnership(v)
 		if err != nil {
 			log.Error().Err(err).Msg("could not set ownership")
@@ -58,7 +58,7 @@ func StartOwnerships() {
 
 func StartPostExecCmds() {
 	// start with pre execution cmds
-	for _, v := range config.Get().Configuration.PostExecCmds {
+	for _, v := range config.Get().Template.PostExecCmds {
 		fileName := exe.EchoToFile(v)
 		err := os.Chmod(fileName, 0775)
 		if err != nil {

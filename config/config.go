@@ -14,26 +14,26 @@ import (
 )
 
 var (
-	sysinfo     *SysInfo
-	sysinfoLock = new(sync.RWMutex)
+	conf     *AppData
+	confLock = new(sync.RWMutex)
 )
 
-type SysInfo struct {
+type AppData struct {
 	CurrentUser           string
 	TrySudo               bool
 	PackageHandler        string
 	PackageHandlerPath    string
 	PackageManagerUpdated bool
 	SystemType            string
-	Configuration         *BruceConfig
+	Template              *TemplateData
 	ServiceController     string
 	ServiceControllerPath string
 	CanUpdateServices     bool
 	ChangedTemplates      []string
 }
 
-// BruceConfig will be marshalled from the provided config file that exists.
-type BruceConfig struct {
+// TemplateData will be marshalled from the provided config file that exists.
+type TemplateData struct {
 	TempDir         string           `yaml:"tempDirectory"`
 	PreExecCmds     []string         `yaml:"preExecCmds"`
 	PostInstallCmds []string         `yaml:"postInstallerCmds"`
@@ -81,14 +81,14 @@ type Services struct {
 }
 
 // LoadConfig attempts to load the user provided manifest.
-func LoadConfig(fileName string) (*BruceConfig, error) {
-	info := InitSysInfo()
+func LoadConfig(fileName string) (*TemplateData, error) {
+	ad := InitAppData()
 	d, err := loader.ReadRemoteFile(fileName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot read config file")
 	}
 	log.Debug().Bytes("rawConfig", d)
-	c := &BruceConfig{}
+	c := &TemplateData{}
 
 	err = yaml.Unmarshal(d, c)
 	if err != nil {
@@ -102,13 +102,13 @@ func LoadConfig(fileName string) (*BruceConfig, error) {
 		}
 	}
 	c.TempDir = fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "bruce")
-	info.Configuration = c
-	info.Save()
+	ad.Template = c
+	ad.Save()
 	return c, nil
 }
 
-func InitSysInfo() *SysInfo {
-	cfg := &SysInfo{}
+func InitAppData() *AppData {
+	cfg := &AppData{}
 	if runtime.GOOS == "linux" {
 		u, err := user.Current()
 		if err != nil {
@@ -126,18 +126,18 @@ func InitSysInfo() *SysInfo {
 }
 
 // Get function returns the currently set global system information to be used.
-func Get() *SysInfo {
-	sysinfoLock.RLock()
-	defer sysinfoLock.RUnlock()
-	return sysinfo
+func Get() *AppData {
+	confLock.RLock()
+	defer confLock.RUnlock()
+	return conf
 
 }
 
 // Save saves.
-func (s *SysInfo) Save() {
-	sysinfoLock.Lock()
-	defer sysinfoLock.Unlock()
-	sysinfo = s
+func (s *AppData) Save() {
+	confLock.Lock()
+	defer confLock.Unlock()
+	conf = s
 }
 
 func GetValueForOSHandler(value string) string {

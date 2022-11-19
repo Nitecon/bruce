@@ -91,7 +91,7 @@ func CopyFile(src, dst string, makedirs bool) error {
 }
 
 func EchoToFile(cmd string) string {
-	randFileName := fmt.Sprintf("%s%c%s.sh", config.Get().Configuration.TempDir, os.PathSeparator, random.String(16))
+	randFileName := fmt.Sprintf("%s%c%s.sh", config.Get().Template.TempDir, os.PathSeparator, random.String(16))
 	// Create the directory not just temp
 	err := os.MkdirAll(path.Dir(randFileName), 0775)
 	if err != nil {

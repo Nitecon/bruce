@@ -31,7 +31,7 @@ func StartOSServiceExecution() []string {
 			exe.Run("systemctl daemon-reload", cfg.TrySudo)
 		}
 		// We only support sytemd / systemctrl for right now...
-		for _, svc := range cfg.Configuration.Services {
+		for _, svc := range cfg.Template.Services {
 			status := exe.Run(fmt.Sprintf("systemctl is-active %s", svc.Name), cfg.TrySudo).Get()
 			if strings.Contains(strings.ToLower(status), "could not be found") {
 				log.Error().Err(fmt.Errorf("%s service not found", svc.Name)).Msg("service does not exist cannot manage state")
@@ -90,7 +90,7 @@ func StartOSServiceExecution() []string {
 
 func RestoreFailedServices(svcs []string) error {
 	for _, svc := range svcs {
-		for _, cs := range config.Get().Configuration.Services {
+		for _, cs := range config.Get().Template.Services {
 			if svc == cs.Name {
 				for _, srcName := range cs.RestartOnUpdate {
 					log.Info().Msgf("restoring template %s", srcName)
