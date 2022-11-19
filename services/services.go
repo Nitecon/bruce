@@ -63,11 +63,15 @@ func StartOSServiceExecution() []string {
 				log.Info().Str("output", out).Msgf("issued restart (always) to service: %s", svc.Name)
 			} else {
 				for _, resTemp := range svc.RestartOnUpdate {
+					shouldRestart := false
 					for _, modT := range templates.GetModifiedTemplates() {
 						if resTemp == modT {
-							out := exe.Run(fmt.Sprintf("systemctl restart %s", svc.Name), cfg.TrySudo).Get()
-							log.Info().Str("output", out).Msgf("issued restart (modified by template) to service: %s", svc.Name)
+							shouldRestart = true
 						}
+					}
+					if shouldRestart {
+						out := exe.Run(fmt.Sprintf("systemctl restart %s", svc.Name), cfg.TrySudo).Get()
+						log.Info().Str("output", out).Msgf("issued restart (modified by template) to service: %s", svc.Name)
 					}
 				}
 			}
