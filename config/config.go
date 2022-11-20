@@ -34,15 +34,20 @@ type AppData struct {
 
 // TemplateData will be marshalled from the provided config file that exists.
 type TemplateData struct {
-	TempDir         string           `yaml:"tempDirectory"`
-	PreExecCmds     []string         `yaml:"preExecCmds"`
-	PostInstallCmds []string         `yaml:"postInstallerCmds"`
-	InstallPackages []string         `yaml:"packageList"`
-	Templates       []ActionTemplate `yaml:"templates"`
-	OwnerShips      []OwnerShip      `yaml:"chowns"`
-	Services        []Services       `yaml:"services"`
-	PostExecCmds    []string         `yaml:"postExecCmds"`
-	BackupDir       string
+	TempDir            string           `yaml:"tempDirectory"`
+	PreExecCmds        []string         `yaml:"preExecCmds"`
+	PreUpdateCmds      []string         `yaml:"preUpdateCmds"`
+	PostTplUpdateCmds  []string         `yaml:"postTplUpdateCmds"`
+	PostUpdateExecCmds []string         `yaml:"postUpdateExecCmds"`
+	PostInstallCmds    []string         `yaml:"postInstallerCmds"`
+	InstallPackages    []string         `yaml:"packageList"`
+	InstallTemplates   []ActionTemplate `yaml:"installTemplates"`
+	UpdateTemplates    []ActionTemplate `yaml:"updateTemplates"`
+	OwnerShips         []OwnerShip      `yaml:"chowns"`
+	Services           []Services       `yaml:"services"`
+	Reloadables        []Reloads        `yaml:"reloads"`
+	PostExecCmds       []string         `yaml:"postExecCmds"`
+	BackupDir          string
 }
 
 // OwnerShip provides a means to set the ownership of files or directories as needed.
@@ -80,6 +85,14 @@ type Services struct {
 	RestartAlways   bool     `yaml:"restartAlways"`
 }
 
+// Reloads are the list of services/apps that must be reloaded/bounced once an update completes.
+type Reloads struct {
+	Name   string `yaml:"name"`   // should be the service name to restart in case of systemd
+	RType  string `yaml:"type"`   // Can be systemd / signal
+	Signal string `yaml:"signal"` // should be in form: SIGHUP/SIGINT etc
+	Pid    string `yaml:"pid"`    // in form /var/run/nginx.pid to retrieve the process id to send signal to
+}
+
 // LoadConfig attempts to load the user provided manifest.
 func LoadConfig(fileName string) (*TemplateData, error) {
 	ad := InitAppData()
@@ -96,7 +109,12 @@ func LoadConfig(fileName string) (*TemplateData, error) {
 	}
 	log.Debug().Interface("config", c)
 	// setup some defaults
-	for _, temps := range c.Templates {
+	for _, temps := range c.InstallTemplates {
+		if temps.Permissions == 0 {
+			temps.Permissions = 0664
+		}
+	}
+	for _, temps := range c.UpdateTemplates {
 		if temps.Permissions == 0 {
 			temps.Permissions = 0664
 		}
@@ -130,7 +148,6 @@ func Get() *AppData {
 	confLock.RLock()
 	defer confLock.RUnlock()
 	return conf
-
 }
 
 // Save saves.

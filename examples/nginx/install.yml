@@ -7,7 +7,7 @@ packageList:
   - nginx
 postInstallerCmds:
   - if [ ! -f /tmp/www.example.com.cert ]; then openssl req -new -newkey rsa:4096 -nodes -keyout /tmp/www.example.com.key -out /tmp/www.example.com.csr -subj "/C=US/ST=Virginia/L=Arlington/O=Dave/CN=www.example.com" && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout /tmp/www.example.com.key  -out /tmp/www.example.com.cert; fi
-templates:
+installTemplates:
   - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
     localLocation: /etc/nginx/nginx.conf
     perms: 0664

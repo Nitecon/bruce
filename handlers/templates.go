@@ -23,10 +23,10 @@ func CreateBackupLocation() {
 	log.Debug().Msgf("created backup directory: %s", backupDir)
 }
 
-func BackupExistingTemplates() {
+func BackupExistingTemplates(tdata []config.ActionTemplate) {
 	// back up existing templates to be updated
 	cfg := config.Get()
-	err := templates.BackupLocal(cfg.Template.BackupDir, cfg.Template.Templates)
+	err := templates.BackupLocal(cfg.Template.BackupDir, tdata)
 	if err != nil {
 		log.Fatal().Err(err).Msg("backup failed... cannot continue")
 	}

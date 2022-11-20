@@ -3,7 +3,6 @@ package main
 import (
 	"bruce/config"
 	"bruce/handlers"
-	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -41,7 +40,7 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:    "install",
-				Aliases: []string{"i"},
+				Aliases: []string{"setup"},
 				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
 				Action: func(cCtx *cli.Context) error {
 					config.LoadConfig(cCtx.String("config"))
@@ -51,9 +50,19 @@ func main() {
 			},
 			{
 				Name:    "update",
+				Aliases: []string{"up"},
+				Usage:   "no package installs... run template updates & restarts only",
+				Action: func(cCtx *cli.Context) error {
+					config.LoadConfig(cCtx.String("config"))
+					handlers.Update(cCtx.Args().First())
+					return nil
+				},
+			},
+			/*{
+				Name:    "upgrade",
 				Aliases: []string{"u"},
 				Usage:   "no package installs... run template updates & restarts only (optional)",
-				/*Subcommands: []*cli.Command{
+				Subcommands: []*cli.Command{
 					{
 						Name:  "template",
 						Usage: "update a template",
@@ -70,17 +79,12 @@ func main() {
 							return nil
 						},
 					},
-				},*/
+				},
 				Action: func(cCtx *cli.Context) error {
 					fmt.Println("completed task: ", cCtx.Args().First())
 					return nil
 				},
-			},
-			{
-				Name:    "upgrade",
-				Aliases: []string{"ug"},
-				Usage:   "upgrade just packages but do not touch templates",
-			},
+			},*/
 		},
 	}
 

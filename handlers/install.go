@@ -14,14 +14,14 @@ func Install(arg string) error {
 	log.Debug().Msg("starting install task")
 
 	// Do initial cleanup of the backup dirs not after, so we have backups in case we need it!
-	if _, err := os.Stat(config.Get().Template.TempDir); os.IsExist(err) {
-		err := os.RemoveAll(config.Get().Template.TempDir)
+	cfg := config.Get()
+	if _, err := os.Stat(cfg.Template.TempDir); os.IsExist(err) {
+		err := os.RemoveAll(cfg.Template.TempDir)
 		if err != nil {
-			log.Info().Msgf("could not remove bruce temp directory, user removed?: %s", config.Get().Template.BackupDir)
+			log.Info().Msgf("could not remove bruce temp directory, user removed?: %s", cfg.Template.BackupDir)
 		}
 	}
-
-	StartPreExecCmds()
+	RunCLICmds(cfg.Template.PreExecCmds)
 	CreateBackupLocation()
 
 	// run package installers
@@ -33,13 +33,13 @@ func Install(arg string) error {
 
 	log.Debug().Msg("package installs complete")
 	log.Debug().Msg("starting post package installation commands")
-	StartPostInstallCmds()
+	RunCLICmds(cfg.Template.PostInstallCmds)
 	log.Debug().Msg("completed post package installation commands")
 
-	BackupExistingTemplates()
+	BackupExistingTemplates(cfg.Template.InstallTemplates)
 
 	log.Debug().Msg("starting template setup")
-	templates.RenderTemplates()
+	templates.RenderTemplates(cfg.Template.InstallTemplates)
 	log.Debug().Msg("complete template setup")
 
 	// Now we set any ownership that must exist prior to service execution:
@@ -62,6 +62,6 @@ func Install(arg string) error {
 	}
 
 	// post execution commands are next
-	StartPostExecCmds()
+	RunCLICmds(cfg.Template.PostExecCmds)
 	return nil
 }
