@@ -38,7 +38,6 @@ type TemplateData struct {
 	PreExecCmds        []string         `yaml:"preExecCmds"`
 	PreUpdateCmds      []string         `yaml:"preUpdateCmds"`
 	PostTplUpdateCmds  []string         `yaml:"postTplUpdateCmds"`
-	PostUpdateExecCmds []string         `yaml:"postUpdateExecCmds"`
 	PostInstallCmds    []string         `yaml:"postInstallerCmds"`
 	InstallPackages    []string         `yaml:"packageList"`
 	InstallTemplates   []ActionTemplate `yaml:"installTemplates"`
@@ -47,6 +46,7 @@ type TemplateData struct {
 	Services           []Services       `yaml:"services"`
 	Reloadables        []Reloads        `yaml:"reloads"`
 	PostExecCmds       []string         `yaml:"postExecCmds"`
+	PostUpdateExecCmds []string         `yaml:"postUpdateExecCmds"`
 	BackupDir          string
 }
 
