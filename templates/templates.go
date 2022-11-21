@@ -178,6 +178,7 @@ func doTemplateExec(local, remote string, vars []config.Vars, perms fs.FileMode)
 func RenderTemplates(templates []config.ActionTemplate) {
 	//wg := sync.WaitGroup{}
 	for _, tpl := range templates {
+		log.Debug().Msgf("starting template rendering on: %s", tpl.LocalLocation)
 		err := doTemplateExec(tpl.LocalLocation, tpl.RemoteLocation, tpl.Variables, tpl.Permissions)
 		if err != nil {
 			log.Debug().Err(err).Msgf("could not execute template: %s", tpl.LocalLocation)
