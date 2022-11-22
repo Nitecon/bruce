@@ -98,7 +98,8 @@ func LoadConfig(fileName string) (*TemplateData, error) {
 	ad := InitAppData()
 	d, err := loader.ReadRemoteFile(fileName)
 	if err != nil {
-		log.Fatal().Err(err).Msg("cannot read config file")
+		log.Error().Err(err).Msg("cannot proceed without a config file and specified config cannot be read.")
+		os.Exit(1)
 	}
 	log.Debug().Bytes("rawConfig", d)
 	c := &TemplateData{}
