@@ -48,17 +48,17 @@ func GetLinuxServiceController() (string, error) {
 }
 
 func GetLinuxPackageHandler() string {
-	packageHandler := "/usr/bin/yum"
+	packageHandler := "/usr/bin/dnf"
+	if exe.FileExists(packageHandler) {
+		log.Debug().Msgf("using package manager: %s", packageHandler)
+		return packageHandler
+	}
+	packageHandler = "/usr/bin/yum"
 	if exe.FileExists(packageHandler) {
 		log.Debug().Msgf("using package manager: %s", packageHandler)
 		return packageHandler
 	}
 	packageHandler = "/usr/bin/apt"
-	if exe.FileExists(packageHandler) {
-		log.Debug().Msgf("using package manager: %s", packageHandler)
-		return packageHandler
-	}
-	packageHandler = "/usr/bin/dnf"
 	if exe.FileExists(packageHandler) {
 		log.Debug().Msgf("using package manager: %s", packageHandler)
 		return packageHandler

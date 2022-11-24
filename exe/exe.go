@@ -5,14 +5,17 @@ import (
 	"bruce/random"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
+	"path/filepath"
 	"regexp"
-	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -114,17 +117,36 @@ func EchoToFile(cmd string) string {
 }
 
 func SetOwnership(item config.OwnerShip) error {
-	if config.Get().SystemType == "linux" {
-		// we'll use run command to chown things because it's much simpler:
-		cmd := "/usr/bin/chown"
-		if item.Object != "file" && item.Recursive {
-			cmd += fmt.Sprintf(" -R %s:%s %s", config.GetValueForOSHandler(item.Owner), config.GetValueForOSHandler(item.Group), item.Path)
-		} else {
-			cmd += fmt.Sprintf(" %s:%s %s", config.GetValueForOSHandler(item.Owner), config.GetValueForOSHandler(item.Group), item.Path)
+	grp, err := user.LookupGroupId(item.Group)
+	if err != nil {
+		log.Error().Msgf("cannot lookup group for %s", item.Group)
+		return err
+	}
+	gid, err := strconv.Atoi(grp.Gid)
+	if err != nil {
+		log.Error().Msgf("not a valid group id number to convert to int")
+		return err
+	}
+	usr, err := user.Lookup(item.Owner)
+	if err != nil {
+		log.Error().Msgf("cannot lookup user for %s", item.Owner)
+		return err
+	}
+	uid, err := strconv.Atoi(usr.Uid)
+	if err != nil {
+		log.Error().Msgf("not a valid user id number to convert to int")
+		return err
+	}
+	if item.Recursive {
+		err := filepath.Walk(item.Path, func(path string, f os.FileInfo, err error) error {
+			return os.Chown(path, uid, gid)
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("could not recursively set ownership")
+			return err
 		}
-		out := Run(cmd, config.Get().TrySudo)
-		log.Debug().Msgf("chown output: %s", out.Get())
-		return out.GetErr()
+	} else {
+		return os.Chown(item.Path, uid, gid)
 	}
 	return nil
 }
@@ -213,21 +235,13 @@ func (e *Execution) RegexMatch() bool {
 }
 
 func HasExecInPath(name string) string {
-	lookupCmd := ""
-	if runtime.GOOS == "linux" {
-		lookupCmd = "which"
+	path, err := exec.LookPath(name)
+	if errors.Is(err, exec.ErrDot) {
+		err = nil
 	}
-	if runtime.GOOS == "windows" {
-		// too much work to detect different shells so lets just assume where...
-		lookupCmd = "where"
+	if err != nil {
+		log.Error().Err(err).Msgf("error searching for %s in path", name)
+		return ""
 	}
-
-	hasPkg := Run(fmt.Sprintf("%s %s", lookupCmd, name), config.Get().TrySudo)
-	log.Debug().Msgf("Output of HasExec: %s", hasPkg.Get())
-	log.Debug().Msgf("Error of HasExec: %s", hasPkg.GetErrStr())
-	if hasPkg.Get() != "" {
-		return hasPkg.Get()
-	}
-
-	return ""
+	return path
 }
