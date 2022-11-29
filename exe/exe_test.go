@@ -1,10 +1,10 @@
 package exe
 
 import (
-	"bruce/config"
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -500,33 +500,20 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestEchoToFile(t *testing.T) {
-	cfg := config.AppData{Template: &config.TemplateData{TempDir: os.TempDir()}}
-	cfg.Save()
-	type args struct {
-		cmd string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "validTest",
-			args: args{cmd: "echo 'hello'"},
-			want: ".sh",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := EchoToFile(tt.args.cmd); !strings.Contains(got, tt.want) {
-				t.Errorf("EchoToFile() = %v, want %v", got, tt.want)
-			}
-		})
+	got := EchoToFile("echo hi", os.TempDir())
+	if runtime.GOOS == "windows" {
+		if !strings.Contains(got, ".bat") {
+			t.Errorf("EchoToFile() | got [%s] wanted [%s]", got, ".bat")
+		}
+	} else {
+		if !strings.Contains(got, ".sh") {
+			t.Errorf("EchoToFile() | got [%s] wanted [%s]", got, ".sh")
+		}
 	}
 }
 
 func TestCopyFile(t *testing.T) {
-	path := fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "checksumTest")
+	path := fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "checksumTest.txt")
 	err := os.WriteFile(path, []byte("foo"), 0664)
 	if err != nil {
 		t.Fatal("could not create temp file for test")
@@ -552,7 +539,7 @@ func TestCopyFile(t *testing.T) {
 			name: "NotExist",
 			args: args{
 				src:      fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "foo.test"),
-				dst:      fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "foo.test"),
+				dst:      fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "foo.test2"),
 				makedirs: false,
 			},
 			wantErr: true,
@@ -561,7 +548,7 @@ func TestCopyFile(t *testing.T) {
 			name: "NotExistMakeDir",
 			args: args{
 				src:      path,
-				dst:      fmt.Sprintf("%s%c%s%c%s", os.TempDir(), os.PathSeparator, "deepdirtest", os.PathSeparator, "checksumTest"),
+				dst:      fmt.Sprintf("%s%c%s%c%s", os.TempDir(), os.PathSeparator, "deepdirtest", os.PathSeparator, "checksumTest.txt"),
 				makedirs: true,
 			},
 			wantErr: false,
@@ -571,6 +558,48 @@ func TestCopyFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CopyFile(tt.args.src, tt.args.dst, tt.args.makedirs); (err != nil) != tt.wantErr {
 				t.Errorf("CopyFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+		t.Logf("removing temp file: %s", tt.args.dst)
+		os.Remove(tt.args.dst)
+	}
+}
+
+// obType, opath, owner, group string, recursive bool
+func TestSetOwnership(t *testing.T) {
+	type args struct {
+		obType    string
+		opath     string
+		owner     string
+		group     string
+		recursive bool
+	}
+	u, err := user.Current()
+	if err != nil {
+		t.Logf("couldnt' look up current user: %s", err)
+	}
+	t.Logf("looking up group for %s", u.Gid)
+	g, err := user.LookupGroupId(u.Gid)
+	if err != nil {
+		t.Logf("couldnt' look up group for the current user: %s", err)
+		t.Skip()
+	}
+	tf := fmt.Sprintf("%s%ctestFile.txt", os.TempDir(), os.PathSeparator)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "validTest",
+			args:    args{obType: "file", owner: u.Username, group: g.Name, opath: tf, recursive: false},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := SetOwnership(tt.args.obType, tt.args.opath, tt.args.owner, tt.args.group, tt.args.recursive); (err != nil) != tt.wantErr {
+				t.Errorf("SetOwnership() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

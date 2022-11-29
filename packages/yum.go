@@ -1,7 +1,6 @@
 package packages
 
 import (
-	"bruce/config"
 	"bruce/exe"
 	"fmt"
 	"github.com/rs/zerolog/log"
@@ -9,13 +8,13 @@ import (
 )
 
 func updateYum() bool {
-	return !exe.Run("yum update -y", config.Get().TrySudo).Failed()
+	return !exe.Run("/usr/bin/yum update -y", false).Failed()
 }
 
 func installYumPackage(pkg []string) bool {
-	installCmd := fmt.Sprintf("yum install -y %s", strings.Join(pkg, " "))
-	log.Debug().Msgf("yum install starting with: %s", installCmd)
-	install := exe.Run(installCmd, config.Get().TrySudo)
+	installCmd := fmt.Sprintf("/usr/bin/yum install -y %s", strings.Join(pkg, " "))
+	log.Debug().Msgf("/usr/bin/yum install starting with: %s", installCmd)
+	install := exe.Run(installCmd, false)
 	if install.Failed() {
 		if len(install.Get()) > 0 {
 			strSplit := strings.Split(install.Get(), "\n")

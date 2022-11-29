@@ -1,7 +1,6 @@
 package exe
 
 import (
-	"bruce/config"
 	"bruce/random"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,12 +8,14 @@ import (
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -58,16 +59,32 @@ func FileExists(src string) bool {
 	return false
 }
 
+func MakeDirs(t string, perm fs.FileMode) error {
+	log.Debug().Msgf("creating directories for: %s", t)
+	// The stdlib doesn't return a proper dirname in windows so we use basname with substr instead
+	ti := strings.LastIndex(t, string(os.PathSeparator))
+	if ti < 1 {
+		log.Debug().Msgf("invalid index [%d] on path : %s", ti, t)
+		return fmt.Errorf("invalid path: %s", t)
+	}
+	newDir := t[:(ti)]
+	log.Debug().Msgf("creating dir: %s", newDir)
+	return os.MkdirAll(newDir, perm)
+}
+
 func CopyFile(src, dst string, makedirs bool) error {
+	log.Debug().Msgf("copying src [%s] to [%s], with MakeDirs: %t", src, dst, makedirs)
 	source, err := os.Open(src)
 	if err != nil {
 		log.Debug().Msgf("copy fail, src does not exist: %s", src)
 		return err
 	}
 	if makedirs {
-		err = os.MkdirAll(path.Dir(dst), 0775)
+		log.Debug().Msgf("creating directories for: %s", dst)
+		err = MakeDirs(dst, 0775)
 		if err != nil {
 			log.Error().Err(err).Msgf("cannot create directories for %s", dst)
+			return err
 		}
 	}
 	destination, err := os.Create(dst)
@@ -93,8 +110,13 @@ func CopyFile(src, dst string, makedirs bool) error {
 	return nil
 }
 
-func EchoToFile(cmd string) string {
-	randFileName := fmt.Sprintf("%s%c%s.sh", config.Get().Template.TempDir, os.PathSeparator, random.String(16))
+func EchoToFile(cmd, tempDir string) string {
+	randFileName := fmt.Sprintf("%s%c%s.sh", tempDir, os.PathSeparator, random.String(16))
+	fileContents := fmt.Sprintf("#!/bin/sh\n" + cmd + "\n")
+	if runtime.GOOS == "windows" {
+		randFileName = fmt.Sprintf("%s%c%s.bat", tempDir, os.PathSeparator, random.String(16))
+		fileContents = cmd
+	}
 	// Create the directory not just temp
 	err := os.MkdirAll(path.Dir(randFileName), 0775)
 	if err != nil {
@@ -106,7 +128,7 @@ func EchoToFile(cmd string) string {
 		log.Error().Err(err).Msgf("temp file creation failed for: %s", randFileName)
 		return ""
 	}
-	size, err := tempFile.WriteString("#!/bin/sh\n" + cmd + "\n")
+	size, err := tempFile.WriteString(fileContents)
 	if err != nil {
 		log.Error().Err(err).Msgf("could not write cmd: %s to file %s", cmd, randFileName)
 		return ""
@@ -116,10 +138,16 @@ func EchoToFile(cmd string) string {
 	return randFileName
 }
 
-func SetOwnership(item config.OwnerShip) error {
-	grp, err := user.LookupGroupId(item.Group)
+// SetOwnership will effectively chown the particular file/directory provided.
+func SetOwnership(obType, opath, owner, group string, recursive bool) error {
+	usr, err := user.Lookup(owner)
 	if err != nil {
-		log.Error().Msgf("cannot lookup group for %s", item.Group)
+		log.Error().Msgf("cannot lookup user for %s", owner)
+		return err
+	}
+	grp, err := user.LookupGroup(group)
+	if err != nil {
+		log.Error().Msgf("cannot lookup group for %s", group)
 		return err
 	}
 	gid, err := strconv.Atoi(grp.Gid)
@@ -127,26 +155,22 @@ func SetOwnership(item config.OwnerShip) error {
 		log.Error().Msgf("not a valid group id number to convert to int")
 		return err
 	}
-	usr, err := user.Lookup(item.Owner)
-	if err != nil {
-		log.Error().Msgf("cannot lookup user for %s", item.Owner)
-		return err
-	}
+
 	uid, err := strconv.Atoi(usr.Uid)
 	if err != nil {
 		log.Error().Msgf("not a valid user id number to convert to int")
 		return err
 	}
-	if item.Recursive {
-		err := filepath.Walk(item.Path, func(path string, f os.FileInfo, err error) error {
-			return os.Chown(path, uid, gid)
+	if obType != "file" && recursive {
+		err := filepath.Walk(opath, func(p string, f os.FileInfo, err error) error {
+			return os.Chown(p, uid, gid)
 		})
 		if err != nil {
 			log.Error().Err(err).Msg("could not recursively set ownership")
 			return err
 		}
 	} else {
-		return os.Chown(item.Path, uid, gid)
+		return os.Chown(opath, uid, gid)
 	}
 	return nil
 }
@@ -160,8 +184,13 @@ func Run(c string, useSudo bool) *Execution {
 		e.cmnd = "sudo"
 		e.args = e.fields
 	} else {
-		e.cmnd = e.fields[0]
-		e.args = e.fields[1:]
+		if (len(e.fields)) < 2 {
+			e.cmnd = e.fields[0]
+			e.args = []string{}
+		} else {
+			e.cmnd = e.fields[0]
+			e.args = e.fields[1:]
+		}
 	}
 	cmd := exec.Command(e.cmnd, e.args...)
 	d, err := cmd.CombinedOutput()

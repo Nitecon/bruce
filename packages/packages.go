@@ -1,32 +1,17 @@
 package packages
 
 import (
-	"bruce/config"
-	"bruce/exe"
 	"fmt"
 	"github.com/rs/zerolog/log"
-	"path"
 	"strings"
 )
 
-func InstallOSPackage(pkgs []string) bool {
-	cfg := config.Get()
-	cfg.PackageHandlerPath = GetLinuxPackageHandler()
-	cfg.PackageHandler = path.Base(cfg.PackageHandlerPath)
-	svcInfo, err := GetLinuxServiceController()
-	if err != nil {
-		cfg.CanUpdateServices = false
-	} else {
-		cfg.ServiceControllerPath = svcInfo
-		cfg.ServiceController = path.Base(svcInfo)
-	}
-	DoPackageManagerUpdate(cfg)
-	cfg.Save()
+func InstallOSPackage(pkgs []string, packageHandler string) bool {
 	if len(pkgs) < 1 {
 		log.Error().Err(fmt.Errorf("can't install nothing"))
 		return false
 	}
-	switch cfg.PackageHandler {
+	switch packageHandler {
 	case "apt":
 		return installAptPackage(GetManagerPackages(pkgs, "apt"))
 	case "yum":
@@ -38,36 +23,8 @@ func InstallOSPackage(pkgs []string) bool {
 	return false
 }
 
-func GetLinuxServiceController() (string, error) {
-	// We only support systemctl for now
-	sysPath := exe.HasExecInPath("systemctl")
-	if sysPath == "" {
-		return "", fmt.Errorf("systemctl not found on this system")
-	}
-	return sysPath, nil
-}
-
-func GetLinuxPackageHandler() string {
-	packageHandler := "/usr/bin/dnf"
-	if exe.FileExists(packageHandler) {
-		log.Debug().Msgf("using package manager: %s", packageHandler)
-		return packageHandler
-	}
-	packageHandler = "/usr/bin/yum"
-	if exe.FileExists(packageHandler) {
-		log.Debug().Msgf("using package manager: %s", packageHandler)
-		return packageHandler
-	}
-	packageHandler = "/usr/bin/apt"
-	if exe.FileExists(packageHandler) {
-		log.Debug().Msgf("using package manager: %s", packageHandler)
-		return packageHandler
-	}
-	log.Error().Err(fmt.Errorf("no package handler")).Msg("could not find a supported package handler for this system")
-	return ""
-}
-
 func GetManagerPackages(pkgs []string, manager string) []string {
+	// TODO: Do we want to honor manager to install since we have os limits now?
 	var newList []string
 	for _, pkg := range pkgs {
 		log.Debug().Msgf("package iteration: %#v", pkg)
@@ -98,9 +55,9 @@ func GetManagerPackages(pkgs []string, manager string) []string {
 	return newList
 }
 
-func DoPackageManagerUpdate(cfg *config.AppData) bool {
+func DoPackageManagerUpdate(packageHandler string) bool {
 	updateComplete := false
-	switch cfg.PackageHandler {
+	switch packageHandler {
 	case "apt":
 		updateComplete = updateApt()
 		break
@@ -111,21 +68,9 @@ func DoPackageManagerUpdate(cfg *config.AppData) bool {
 		updateComplete = updateDnf()
 		break
 	}
-	cfg.PackageManagerUpdated = updateComplete
 	if !updateComplete {
 		log.Info().Msg("no package manager to check for installed package, during packaging update")
+		return false
 	}
-	return false
-}
-
-func RunPackageInstall() error {
-
-	pkgs := config.Get().Template.InstallPackages
-	if InstallOSPackage(pkgs) {
-		log.Info().Msgf("[%s] installed", pkgs)
-		return nil
-	}
-
-	log.Error().Err(fmt.Errorf("failed to install [%s]", pkgs))
-	return nil
+	return true
 }

@@ -1,7 +1,6 @@
 package packages
 
 import (
-	"bruce/config"
 	"bruce/exe"
 	"fmt"
 	"github.com/rs/zerolog/log"
@@ -9,13 +8,13 @@ import (
 )
 
 func updateDnf() bool {
-	return !exe.Run("dnf update -y", config.Get().TrySudo).Failed()
+	return !exe.Run("/usr/bin/dnf update -y", false).Failed()
 }
 
 func installDnfPackage(pkg []string) bool {
-	installCmd := fmt.Sprintf("dnf install -y %s", strings.Join(pkg, " "))
-	log.Debug().Msgf("dnf install starting with: %s", installCmd)
-	install := exe.Run(installCmd, config.Get().TrySudo)
+	installCmd := fmt.Sprintf("/usr/bin/dnf install -y %s", strings.Join(pkg, " "))
+	log.Debug().Msgf("/usr/bin/dnf install starting with: %s", installCmd)
+	install := exe.Run(installCmd, false)
 	if install.Failed() {
 		if len(install.Get()) > 0 {
 			strSplit := strings.Split(install.Get(), "\n")

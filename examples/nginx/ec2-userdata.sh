@@ -8,5 +8,4 @@ cd /opt/bruce/${CURVER}
 wget https://github.com/Nitecon/bruce/releases/download/v${CURVER}/bruce_${CURVER}_linux_amd64.tar.gz
 tar xf bruce_${CURVER}_linux_amd64.tar.gz
 ln -s /opt/bruce/${CURVER}/bruce /usr/bin/bruce
-/usr/bin/bruce --config https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/install.yml install
-
+/usr/bin/bruce --config https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/install.yml > /var/log/bruce.log

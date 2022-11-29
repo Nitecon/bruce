@@ -3,6 +3,7 @@ package main
 import (
 	"bruce/config"
 	"bruce/handlers"
+	"bruce/system"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -26,71 +27,51 @@ func setLogger() {
 
 func main() {
 	setLogger()
-
+	err := system.InitializeSysInfo()
+	if err != nil {
+		log.Error().Err(err).Msg("cannot start with unknown system info")
+		os.Exit(1)
+	}
 	app := &cli.App{
 		Name:  "bruce",
-		Usage: "By default will load config from /etc/bruce/config.yml",
+		Usage: "Start with: /path/to/bruce https://someinstallhost/installme.yml",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "config",
 				Value: "/etc/bruce/config.yml",
-				Usage: "location where the config file will be example: https://s3.amazonaws.com/somebucket/my_install.yml",
+				Usage: "See docs for supported endpoints, eg: https://s3.amazonaws.com/somebucket/my_install.yml",
 			},
+		},
+		Action: func(cCtx *cli.Context) error {
+			t, err := config.LoadConfig(cCtx.String("config"))
+			if err != nil {
+				log.Error().Err(err).Msg("cannot continue without configuration data")
+				os.Exit(1)
+			}
+			handlers.Install(t)
+			return nil
 		},
 		Commands: []*cli.Command{
 			{
 				Name:    "install",
 				Aliases: []string{"setup"},
-				Usage:   "run package installs and template configuration & does daemon-reload & service restarts (systemd)",
+				Usage:   "this is the default action and will be run if no commands are specified",
 				Action: func(cCtx *cli.Context) error {
-					config.LoadConfig(cCtx.String("config"))
-					handlers.Install(cCtx.Args().First())
+					t, err := config.LoadConfig(cCtx.String("config"))
+					if err != nil {
+						log.Error().Err(err).Msg("cannot continue without configuration data")
+						os.Exit(1)
+					}
+					handlers.Install(t)
 					return nil
 				},
 			},
-			{
-				Name:    "update",
-				Aliases: []string{"up"},
-				Usage:   "no package installs... run template updates & restarts only",
-				Action: func(cCtx *cli.Context) error {
-					config.LoadConfig(cCtx.String("config"))
-					handlers.Update(cCtx.Args().First())
-					return nil
-				},
-			},
-			/*{
-				Name:    "upgrade",
-				Aliases: []string{"u"},
-				Usage:   "no package installs... run template updates & restarts only (optional)",
-				Subcommands: []*cli.Command{
-					{
-						Name:  "template",
-						Usage: "update a template",
-						Action: func(cCtx *cli.Context) error {
-							fmt.Println("new task template: ", cCtx.Args().First())
-							return nil
-						},
-					},
-					{
-						Name:  "restart",
-						Usage: "restart a service",
-						Action: func(cCtx *cli.Context) error {
-							fmt.Println("restarting service: ", cCtx.Args().First())
-							return nil
-						},
-					},
-				},
-				Action: func(cCtx *cli.Context) error {
-					fmt.Println("completed task: ", cCtx.Args().First())
-					return nil
-				},
-			},*/
 		},
 	}
-
-	err := app.Run(os.Args)
+	log.Info().Msgf("Starting Bruce (Version: %s)", version)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
-	//log.Info().Msgf("Starting Bruce (Version: %s)", version)
+
 }

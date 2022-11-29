@@ -2,100 +2,70 @@ package config
 
 import (
 	"bruce/loader"
-	"fmt"
+	"bruce/operators"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-	"io/fs"
 	"os"
-	"os/user"
-	"runtime"
-	"strings"
-	"sync"
 )
-
-var (
-	conf     *AppData
-	confLock = new(sync.RWMutex)
-)
-
-type AppData struct {
-	CurrentUser           string
-	TrySudo               bool
-	PackageHandler        string
-	PackageHandlerPath    string
-	PackageManagerUpdated bool
-	SystemType            string
-	Template              *TemplateData
-	ServiceController     string
-	ServiceControllerPath string
-	CanUpdateServices     bool
-	ChangedTemplates      []string
-}
 
 // TemplateData will be marshalled from the provided config file that exists.
 type TemplateData struct {
-	TempDir            string           `yaml:"tempDirectory"`
-	PreExecCmds        []string         `yaml:"preExecCmds"`
-	PreUpdateCmds      []string         `yaml:"preUpdateCmds"`
-	PostTplUpdateCmds  []string         `yaml:"postTplUpdateCmds"`
-	PostInstallCmds    []string         `yaml:"postInstallerCmds"`
-	InstallPackages    []string         `yaml:"packageList"`
-	InstallTemplates   []ActionTemplate `yaml:"installTemplates"`
-	UpdateTemplates    []ActionTemplate `yaml:"updateTemplates"`
-	OwnerShips         []OwnerShip      `yaml:"chowns"`
-	Services           []Services       `yaml:"services"`
-	Reloadables        []Reloads        `yaml:"reloads"`
-	PostExecCmds       []string         `yaml:"postExecCmds"`
-	PostUpdateExecCmds []string         `yaml:"postUpdateExecCmds"`
-	BackupDir          string
+	Steps     []Steps `yaml:"steps"`
+	BackupDir string
 }
 
-// OwnerShip provides a means to set the ownership of files or directories as needed.
-type OwnerShip struct {
-	Object    string `yaml:"type"`
-	Path      string `yaml:"path"`
-	Owner     string `yaml:"owner"`
-	Group     string `yaml:"group"`
-	Recursive bool   `yaml:"recursive"`
+// Steps include multiple action operators to be executed per step
+type Steps struct {
+	Name   string             `yaml:"name"`
+	Action operators.Operator `yaml:"action"`
 }
 
-// ActionTemplate provides the local and remote files to be used.
-type ActionTemplate struct {
-	LocalLocation  string      `yaml:"localLocation"`
-	RemoteLocation string      `yaml:"remoteLocation"`
-	Variables      []Vars      `yaml:"vars"`
-	Permissions    fs.FileMode `yaml:"perms"`
-	Owner          string      `yaml:"owner"`
-	Group          string      `yaml:"group"`
-}
+// TODO: Add UnmarshallJSON
 
-// Vars indicates the variables to replace in the template and how to replace them.
-type Vars struct {
-	Type     string `yaml:"type"`
-	Output   string `yaml:"output"`
-	Variable string `yaml:"variable"`
-}
+// UnmarshalYAML Implements the Unmarshaler interface of the yaml pkg.
+func (e *Steps) UnmarshalYAML(nd *yaml.Node) error {
+	// TODO: Fix this is the near future. (maybe plugin based?)
 
-// Services are the list of services that must be set up as required.
-type Services struct {
-	Name            string   `yaml:"name"`
-	Enabled         bool     `yaml:"setEnabled"`
-	State           string   `yaml:"state"`
-	RestartOnUpdate []string `yaml:"restartTrigger"`
-	RestartAlways   bool     `yaml:"restartAlways"`
-}
+	co := &operators.Command{}
+	if err := nd.Decode(co); err == nil && len(co.Cmd) > 0 {
+		log.Debug().Msg("matching command operator")
+		e.Action = co
+		return nil
+	}
 
-// Reloads are the list of services/apps that must be reloaded/bounced once an update completes.
-type Reloads struct {
-	Name   string `yaml:"name"`   // should be the service name to restart in case of systemd
-	RType  string `yaml:"type"`   // Can be systemd / signal
-	Signal string `yaml:"signal"` // should be in form: SIGHUP/SIGINT etc
-	Pid    string `yaml:"pid"`    // in form /var/run/nginx.pid to retrieve the process id to send signal to
+	to := &operators.Template{}
+	if err := nd.Decode(to); err == nil && len(to.Template) > 0 {
+		log.Debug().Msg("matching template operator")
+		e.Action = to
+		return nil
+	}
+
+	pl := &operators.Packages{}
+	if err := nd.Decode(pl); err == nil && len(pl.PackageList) > 0 {
+		log.Debug().Msg("matching package operator")
+		e.Action = pl
+		return nil
+	}
+
+	own := &operators.OwnerShip{}
+	if err := nd.Decode(own); err == nil && len(own.Path) > 0 {
+		log.Debug().Msg("matching ownership operator")
+		e.Action = own
+		return nil
+	}
+
+	svc := &operators.Services{}
+	if err := nd.Decode(svc); err == nil && len(svc.Service) > 0 {
+		log.Debug().Msg("matching service operator")
+		e.Action = svc
+		return nil
+	}
+	e.Action = &operators.NullOperator{}
+	return nil
 }
 
 // LoadConfig attempts to load the user provided manifest.
 func LoadConfig(fileName string) (*TemplateData, error) {
-	ad := InitAppData()
 	d, err := loader.ReadRemoteFile(fileName)
 	if err != nil {
 		log.Error().Err(err).Msg("cannot proceed without a config file and specified config cannot be read.")
@@ -108,86 +78,5 @@ func LoadConfig(fileName string) (*TemplateData, error) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not parse config file")
 	}
-	log.Debug().Interface("config", c)
-	// setup some defaults
-	for _, temps := range c.InstallTemplates {
-		if temps.Permissions == 0 {
-			temps.Permissions = 0664
-		}
-	}
-	for _, temps := range c.UpdateTemplates {
-		if temps.Permissions == 0 {
-			temps.Permissions = 0664
-		}
-	}
-	c.TempDir = fmt.Sprintf("%s%c%s", os.TempDir(), os.PathSeparator, "bruce")
-	ad.Template = c
-	ad.Save()
 	return c, nil
-}
-
-func InitAppData() *AppData {
-	cfg := &AppData{}
-	if runtime.GOOS == "linux" {
-		u, err := user.Current()
-		if err != nil {
-			log.Fatal().Err(err).Msg("user should exist to operate")
-		}
-		if u.Username != "root" {
-			cfg.TrySudo = true
-			log.Debug().Msgf("attempting sudo, current user: %s", cfg.CurrentUser)
-		}
-
-		cfg.SystemType = "linux"
-	}
-	cfg.Save()
-	return cfg
-}
-
-// Get function returns the currently set global system information to be used.
-func Get() *AppData {
-	confLock.RLock()
-	defer confLock.RUnlock()
-	return conf
-}
-
-// Save saves.
-func (s *AppData) Save() {
-	confLock.Lock()
-	defer confLock.Unlock()
-	conf = s
-}
-
-func GetValueForOSHandler(value string) string {
-	log.Debug().Msgf("OS Handler value iteration: %#v", value)
-	if Get().PackageHandler == "" {
-		log.Error().Err(fmt.Errorf("cannot retrieve os handler value without a known package handler"))
-		return ""
-	}
-	log.Debug().Msgf("testing for my package handler: %s", Get().PackageHandler)
-	if strings.Contains(value, "|") {
-		managerList := strings.Split(value, "|")
-		var basePackage = ""
-		var usablePackage = ""
-		for _, mpkg := range managerList {
-			log.Debug().Msgf("os handler iteration for manager: %#v", mpkg)
-			if strings.Contains(mpkg, "=") {
-				pmSplit := strings.Split(mpkg, "=")
-				log.Debug().Msgf("handler [%s] specific value: %s", pmSplit[0], pmSplit[1])
-				if pmSplit[0] == Get().PackageHandler {
-					usablePackage = pmSplit[1]
-				}
-			} else {
-				basePackage = mpkg
-			}
-		}
-		if usablePackage != "" {
-			log.Debug().Msgf("returning package manager value: %s", usablePackage)
-			return usablePackage
-		}
-		log.Debug().Msgf("returning base value: %s", basePackage)
-		return basePackage
-	}
-	log.Debug().Msgf("returning original value: %s", value)
-	return value
 }

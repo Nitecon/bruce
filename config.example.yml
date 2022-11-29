@@ -1,88 +1,42 @@
 ---
 # this is a temporary directory where bruce will create / store templates for execution etc
 tempDirectory: /tmp/bruce
-# These commands will be executed as the first thing to be done, they may execute in random order
-# these commands are similar to preUpdateCmds however they are executed only during the install hander (bruce install)
-preExecCmds:
-  - echo 'hi there' > /tmp/logExample
-# these commands are similar to preExecCmds however they are executed only during the update hander (bruce update)
-preUpdateCmds:
-  - echo "Pre update run starting" > /tmp/logUpdateExample
-# The package list is the list of software packages to be installed via the host system through yum / apt / dnf etc
-# Specify the default packages for all os's first and then use pipe delimiter to indicate other installers and their associated packages.
-packageList:
-  - netcat
-  - bind-utils|apt=bind9-utils
-# The install templates are rendered after packages are installed and if originals exist they are backed up first.
-installTemplates:
-  - localLocation: /tmp/local_template_1.tpl
+steps:
+  - name: testCommand
+    cmd: echo "Hello World"
+  - name: nginx main conf
+    template: /tmp/nginx.conf
+    remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
     perms: 0664
-    owner: whattingh
-    group: whattingh
-    remoteLocation: ./examples/test_template_1.yml
-    vars:
-    - type: command
-      output: /usr/bin/ls -alh /tmp/bruce/
-      variable: REPLACE_ME_1
-    - type: value
-      output: hi there
-      variable: REPLACE_ME_2
-  - localLocation: /tmp/local_template_2.tpl
-    remoteLocation: ./examples/test_template_2.yml
-    owner: whattingh
-    group: whattingh
-    perms: 0664
-    vars:
-    - type: value
-      output: FOOTHEBARBAZ
-      variable: REPLACE_ME_2
-# Update templates are rendered only during update run and no install templates will be touched, you can potentially duplicate an install template here if need be.
-updateTemplates:
-  - remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/var/www/html/index.html
-    localLocation: /var/www/html/index.html
     owner: root
     group: root
-    perms: 0664
     vars:
-      - type: command
-        output: hostname -f
-        variable: HOSTNAME
-# Chowns will set the appropriate ownerships for files on disk on both install / update runs if file / dirs exist.  Recursive will only function if it is a directory.
-chowns:
-  - type: file # can be file / dir
-    path: /tmp/www.example.com.key
-    owner: nginx|apt=www-data
-    group: nginx|apt=www-data
+      - type: value
+        input: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
+        variable: NGINX_USER
+  - name: install packages for ubuntu distros
+    packageList:
+      - bind9-utils
+    osLimits: ubuntu:20.04|debian
+  - name: install packages for rh distros
+    packageList:
+      - bind-utils
+    osLimits: fedora|redhat|centos|arch
+  - name: set ownership of files
+    type: file
+    path: /tmp/nginx.conf
+    owner: nginx
+    group: nginx
     recursive: false
-  - type: file # can be file / dir
-    path: /tmp/www.example.com.cert
-    owner: nginx|apt=www-data
-    group: nginx|apt=www-data
-    recursive: false
-# As you create systemd templates etc or new installs via package manager this sub section allows you to set the state
-# that the service should be enabled as and wether it should restart etc on template change or on all runs.
-services:
-- name: nginx
-  setEnabled: yes
-  state: started
-  restartTrigger:
-    - /tmp/local_template_1.tpl
-  restartAlways: no
-- name: apache
-  setEnabled: yes
-  state: started
-  restartAlways: no
-# During non install run the reloads section is used to restart services or provide HUP calls as example to processes
-# specifying systemd will restart the service by "name" under linux specifying anything else will require
-# a pid file location where the process ID can be read to send the signal to.
-reloads:
-  - name: nginx
-    type: signal
-    signal: SIGHUP
-    pid: /var/run/nginx.pid
-# The post exec commands run during the installer handler and is the final item to complete.
-postExecCmds:
-  - echo "completed execution" > /tmp/logExample
-# the postUpdateExecCmds are similar to Post Exec Cmds but only execute during update handler not during install.
-postUpdateExecCmds:
-  - echo "update complete" >> /tmp/logExample
+  - name: set nginx enabled
+    service: nginx
+    setEnabled: true
+    state: started # can be started / stopped
+    restartTrigger: # if these templates were altered always restart
+      - /tmp/nginx.conf
+    restartAlways: false
+    osLimits: all
+  - name: Send hup to nginx
+    pidFile: /var/run/nginx.pid
+    signal: SIGHUP #currently only supports: SIGHUP / SIGINT
+
