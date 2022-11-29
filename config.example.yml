@@ -1,6 +1,14 @@
 ---
-# this is a temporary directory where bruce will create / store templates for execution etc
-tempDirectory: /tmp/bruce
+## Steps are an array of operators that can be used to mutate the environment
+## the current list of operators include:
+## Command: enables the ability to run an arbitrary command on the system and limit the command based on specific OS
+## Ownership: Ability to chown individual / recursive directories of files
+## Packages: Ability to install packages based on the locally supported os installer like dnf / yum / apt-get
+## Services: Ability to enable / restart and reconfigure and restart services based on template updates
+## Signals: Ability to send a signal to a particular process
+## Templates: Ability to create templates on the system and inject variables by values from commands or provided input data.
+##
+## Some examples of operators as steps are shown below, see documentation on how to use.
 steps:
   - name: testCommand
     cmd: echo "Hello World"
@@ -33,10 +41,10 @@ steps:
     setEnabled: true
     state: started # can be started / stopped
     restartTrigger: # if these templates were altered always restart
-      - /tmp/nginx.conf
+      - /etc/nginx/nginx.conf
     restartAlways: false
     osLimits: all
-  - name: Send hup to nginx
+  - name: Send hup to nginx # this will be altered to include restartTrigger to watch templates like services.
     pidFile: /var/run/nginx.pid
     signal: SIGHUP #currently only supports: SIGHUP / SIGINT
 
