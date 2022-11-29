@@ -8,7 +8,7 @@ Bruce was initially intended to just operate as a more advanced exec handler for
 
 Once you've downloaded your respective OS package from: https://github.com/Nitecon/bruce/releases/latest
 
-Extract it and run bruce with a config file like so:
+Extract it and run bruce with a config file, for an example config file see: https://github.com/Nitecon/bruce/blob/main/config.example.yml
 
 ```
 ./bruce --config=install.yml
