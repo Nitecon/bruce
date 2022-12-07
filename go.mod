@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.146
 	github.com/davecgh/go-spew v1.1.1
 	github.com/rs/zerolog v1.28.0
-	github.com/urfave/cli/v2 v2.23.5
+	github.com/urfave/cli/v2 v2.23.6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
