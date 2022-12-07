@@ -1,14 +1,26 @@
 package loader
 
-import "strings"
+import (
+	"io"
+	"strings"
+)
 
 func ReadRemoteFile(remoteLoc string) ([]byte, error) {
+	r, err := GetRemoteReader(remoteLoc)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return io.ReadAll(r)
+}
+
+func GetRemoteReader(remoteLoc string) (io.ReadCloser, error) {
 	if strings.ToLower(remoteLoc[0:4]) == "http" {
-		return ReadFromHttp(remoteLoc)
+		return ReaderFromHttp(remoteLoc)
 	}
 	if strings.ToLower(remoteLoc[0:5]) == "s3://" {
-		return ReadFromS3(remoteLoc)
+		return ReaderFromS3(remoteLoc)
 	}
 	// if no remote handlers can handle the reading of the file, lets try local
-	return ReadFromLocal(remoteLoc)
+	return ReaderFromLocal(remoteLoc)
 }

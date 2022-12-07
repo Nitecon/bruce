@@ -22,7 +22,7 @@ type S3Manager struct {
 	Service s3iface.S3API
 }
 
-func ReadFromS3(fileName string) ([]byte, error) {
+func ReaderFromS3(fileName string) (io.ReadCloser, error) {
 	if s == nil {
 		region := os.Getenv("AWS_REGION")
 		if region == "" {
@@ -55,5 +55,5 @@ func ReadFromS3(fileName string) ([]byte, error) {
 		log.Debug().Err(err).Msg("fetching object from S3 failed")
 		return nil, err
 	}
-	return io.ReadAll(fd.Body)
+	return fd.Body, nil
 }

@@ -33,6 +33,13 @@ func (e *Steps) UnmarshalYAML(nd *yaml.Node) error {
 		return nil
 	}
 
+	cp := &operators.Copy{}
+	if err := nd.Decode(cp); err == nil && len(cp.Src) > 0 {
+		log.Debug().Msg("matching copy operator")
+		e.Action = cp
+		return nil
+	}
+
 	to := &operators.Template{}
 	if err := nd.Decode(to); err == nil && len(to.Template) > 0 {
 		log.Debug().Msg("matching template operator")

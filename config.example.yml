@@ -7,11 +7,17 @@
 ## Services: Ability to enable / restart and reconfigure and restart services based on template updates
 ## Signals: Ability to send a signal to a particular process
 ## Templates: Ability to create templates on the system and inject variables by values from commands or provided input data.
+## Copy: Will copy a file from several source locations [http(s)/s3/local] to a local destination
 ##
 ## Some examples of operators as steps are shown below, see documentation on how to use.
+
 steps:
   - name: testCommand
     cmd: echo "Hello World"
+  - name: copy golang binary
+    copy: s3://somebucket/somefile.bin
+    dest: /usr/bin/somefile
+    perm: 0775
   - name: nginx main conf
     template: /tmp/nginx.conf
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
