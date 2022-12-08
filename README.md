@@ -41,4 +41,9 @@ Principles for building bruce & why not ansible?:
 - Must configure templates (concurrently if possible)
 - Must be way faster than ansible IE: configure entire system before checks pass on an amazon t2.micro for general installs like nginx
 
-
+===== WIP =====
+- For template variables make it an array on \n so it's simpler to use in go templates, and reduces sed / awk cmd complexity for generating the output.
+- Download and extract tarball to specified directory
+- moar testing...
+- (should user adding be added/works well enough with cmd?)
+- Anyone use windows a lot that can help provide ways to use bash / powerscript?  right now it saves to bat file for executing cmds, also no idea about package managers on windows
