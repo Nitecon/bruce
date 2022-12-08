@@ -6,6 +6,11 @@ Bruce was initially intended to just operate as a more advanced exec handler for
 
 ## TLDR How do I run bruce.
 
+### A one liner to download latest bruce:
+```
+wget -qO- $(curl -s https://api.github.com/repos/Nitecon/bruce/releases/latest | grep "linux_amd64"|grep https | cut -d : -f 2,3 | tr -d \" | awk '{$1=$1};1') |tar -xvz
+```
+
 Once you've downloaded your respective OS package from: https://github.com/Nitecon/bruce/releases/latest
 
 Extract it and run bruce with a config file, for an example config file see: https://github.com/Nitecon/bruce/blob/main/config.example.yml
