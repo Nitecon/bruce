@@ -11,8 +11,12 @@ func updateYum() bool {
 	return !exe.Run("/usr/bin/yum update -y", false).Failed()
 }
 
-func installYumPackage(pkg []string) bool {
-	installCmd := fmt.Sprintf("/usr/bin/yum install -y %s", strings.Join(pkg, " "))
+func installYumPackage(pkg []string, isInstall bool) bool {
+	action := "install"
+	if !isInstall {
+		action = "remove"
+	}
+	installCmd := fmt.Sprintf("/usr/bin/yum %s -y %s", action, strings.Join(pkg, " "))
 	log.Debug().Msgf("/usr/bin/yum install starting with: %s", installCmd)
 	install := exe.Run(installCmd, false)
 	if install.Failed() {

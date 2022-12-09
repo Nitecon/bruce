@@ -11,8 +11,12 @@ func updateDnf() bool {
 	return !exe.Run("/usr/bin/dnf update -y", false).Failed()
 }
 
-func installDnfPackage(pkg []string) bool {
-	installCmd := fmt.Sprintf("/usr/bin/dnf install -y %s", strings.Join(pkg, " "))
+func installDnfPackage(pkg []string, isInstall bool) bool {
+	action := "install"
+	if !isInstall {
+		action = "remove"
+	}
+	installCmd := fmt.Sprintf("/usr/bin/dnf %s -y %s", action, strings.Join(pkg, " "))
 	log.Debug().Msgf("/usr/bin/dnf install starting with: %s", installCmd)
 	install := exe.Run(installCmd, false)
 	if install.Failed() {

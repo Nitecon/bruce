@@ -11,8 +11,12 @@ func updateApt() bool {
 	return !exe.Run("/usr/bin/apt-get update -y", false).Failed()
 }
 
-func installAptPackage(pkg []string) bool {
-	installCmd := fmt.Sprintf("/usr/bin/apt-get install -y %s", strings.Join(pkg, " "))
+func installAptPackage(pkg []string, isInstall bool) bool {
+	action := "install"
+	if !isInstall {
+		action = "remove"
+	}
+	installCmd := fmt.Sprintf("/usr/bin/apt-get %s -y %s", action, strings.Join(pkg, " "))
 	log.Debug().Msgf("apt install starting with: %s", installCmd)
 	install := exe.Run(installCmd, false)
 	if install.Failed() {

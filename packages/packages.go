@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-func InstallOSPackage(pkgs []string, packageHandler string) bool {
+func InstallOSPackage(pkgs []string, packageHandler string, isInstall bool) bool {
 	if len(pkgs) < 1 {
 		log.Error().Err(fmt.Errorf("can't install nothing"))
 		return false
 	}
 	switch packageHandler {
 	case "apt":
-		return installAptPackage(GetManagerPackages(pkgs, "apt"))
+		return installAptPackage(GetManagerPackages(pkgs, "apt"), isInstall)
 	case "yum":
-		return installYumPackage(GetManagerPackages(pkgs, "yum"))
+		return installYumPackage(GetManagerPackages(pkgs, "yum"), isInstall)
 	case "dnf":
-		return installDnfPackage(GetManagerPackages(pkgs, "dnf"))
+		return installDnfPackage(GetManagerPackages(pkgs, "dnf"), isInstall)
 	}
 	log.Info().Msg("no package manager to check for installed package")
 	return false
