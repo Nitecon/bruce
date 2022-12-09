@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	backupName string
 	// may want to re-use this later but tbd
 	templateFuncs = template.FuncMap{
 		"contains": strings.Contains,
@@ -34,7 +33,6 @@ func init() {
 }
 
 type Template struct {
-	Name      string      `yaml:"name"`
 	Template  string      `yaml:"template"`
 	RemoteLoc string      `yaml:"remoteLocation"`
 	Perms     os.FileMode `yaml:"perms"`

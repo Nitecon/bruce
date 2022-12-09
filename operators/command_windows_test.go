@@ -32,8 +32,7 @@ func TestCommand_Execute(t *testing.T) {
 		t.Log("running windows tests")
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Command{
-				Name: tt.fields.Name,
-				Cmd:  tt.fields.Cmd,
+				Cmd: tt.fields.Cmd,
 			}
 			if err := c.Execute(); (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)

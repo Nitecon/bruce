@@ -11,7 +11,6 @@ import (
 //
 
 type Services struct {
-	Name            string   `yaml:"name"`
 	Service         string   `yaml:"service"`
 	Enabled         bool     `yaml:"setEnabled"`
 	State           string   `yaml:"state"`

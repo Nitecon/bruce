@@ -12,7 +12,6 @@ import (
 )
 
 type Copy struct {
-	Name string      `yaml:"name"`
 	Src  string      `yaml:"copy"`
 	Dest string      `yaml:"dest"`
 	Perm fs.FileMode `yaml:"perm"`

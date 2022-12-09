@@ -1,17 +1,13 @@
 ---
 steps:
-  - name: enable amazon linux extras
-    cmd: sudo amazon-linux-extras install nginx1
+  - cmd: sudo amazon-linux-extras install nginx1
     osLimits: amzn
-  - name: create vhosts directory
-    cmd: mkdir -p /etc/nginx/vhosts/
+  - cmd: mkdir -p /etc/nginx/vhosts/
     osLimits: all
-  - name: install nginx
-    packageList:
+  - packageList:
       - nginx
     osLimits: debian|ubuntu|centos|fedora|redhat|arch
-  - name: main nginx config
-    template: /etc/nginx/nginx.conf
+  - template: /etc/nginx/nginx.conf
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
     perms: 0664
     owner: root
@@ -20,14 +16,12 @@ steps:
       - type: value
         input: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
         variable: NGINX_USER
-  - name: default vhosts file
-    template: /etc/nginx/vhosts/default.conf
+  - template: /etc/nginx/vhosts/default.conf
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/vhosts/default.conf
     owner: root
     group: root
     perms: 0664
-  - name: index file
-    template: /var/www/html/index.html
+  - template: /var/www/html/index.html
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/var/www/html/index.html
     owner: root
     group: root
@@ -36,8 +30,7 @@ steps:
       - type: command
         input: hostname -f
         variable: HOSTNAME
-  - name: set nginx enabled
-    service: nginx
+  - service: nginx
     setEnabled: true
     state: started # can be started / stopped
     restartTrigger: # if these templates were altered always restart

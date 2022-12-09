@@ -10,8 +10,7 @@ import (
 
 // Cron provides a means to set the ownership of files or directories as needed.
 type Cron struct {
-	Name     string `yaml:"name"`
-	Job      string `yaml:"jobname"`
+	Name     string `yaml:"cron"`
 	Schedule string `yaml:"schedule"`
 	User     string `yaml:"username"`
 	Exec     string `yaml:"cmd"`
@@ -19,7 +18,7 @@ type Cron struct {
 
 func (c *Cron) Execute() error {
 	if runtime.GOOS == "linux" {
-		jobName := mutation.StripNonAlnum(c.Job)
+		jobName := mutation.StripNonAlnum(c.Name)
 		c.Schedule = mutation.StripExtraWhitespaceFB(c.Schedule)
 		c.User = mutation.StripNonAlnum(c.User)
 		log.Debug().Msgf("starting cronjob: %s", jobName)

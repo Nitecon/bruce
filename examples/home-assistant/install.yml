@@ -5,26 +5,18 @@
 ## Please note you should have mounted your /data volume before you run bruce.
 
 steps:
-  - name: Make the data storage directory if not exists...
-    cmd: mkdir -p /data/{docker,home-assistant}
-  - name: Symlink docker directory prior to install
-    cmd: ln -s /data/docker/ /var/lib/docker
-  - name: install docker engine
-    cmd: bash <(curl -fsSL https://get.docker.com -o get-docker.sh)
-  - name: setup the ha user which will run on the system
-    cmd: useradd -m -d /data/home-assistant --shell /bin/false ha
-  - name: add home assistant to the docker group to run containers
-    cmd: usermod -aG docker ha
-  - name: own the home assistant dirs as ha user
-    cmd: chown -R ha:ha /data/home-assistant
-  - name: install systemd template for managing home assistant
-    template: /etc/systemd/system/home-assistant.service
+  - cmd: mkdir -p /data/{docker,home-assistant}
+  - cmd: ln -s /data/docker/ /var/lib/docker
+  - cmd: bash <(curl -fsSL https://get.docker.com -o get-docker.sh)
+  - cmd: useradd -m -d /data/home-assistant --shell /bin/false ha
+  - cmd: usermod -aG docker ha
+  - cmd: chown -R ha:ha /data/home-assistant
+  - template: /etc/systemd/system/home-assistant.service
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/home-assistant/systemd.tpl
     perms: 0664
     owner: root
     group: root
-  - name: set home-assistant enabled
-    service: home-assistant
+  - service: home-assistant
     setEnabled: true
     state: started # can be started / stopped
     restartAlways: false

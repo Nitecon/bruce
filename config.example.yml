@@ -13,14 +13,11 @@
 ## Some examples of operators as steps are shown below, see documentation on how to use.
 
 steps:
-  - name: testCommand
-    cmd: echo "Hello World"
-  - name: copy golang binary
-    copy: s3://somebucket/somefile.bin
+  - cmd: echo "Hello World"
+  - copy: s3://somebucket/somefile.bin
     dest: /usr/bin/somefile
     perm: 0775
-  - name: nginx main conf
-    template: /tmp/nginx.conf
+  - template: /tmp/nginx.conf
     remoteLocation: https://raw.githubusercontent.com/Nitecon/bruce/main/examples/nginx/templates/etc/nginx/nginx.conf
     perms: 0664
     owner: root
@@ -29,32 +26,26 @@ steps:
       - type: value
         input: nginx|apt=www-data  # uses nginx for all platforms that don't use apt installer on those use www-data
         variable: NGINX_USER
-  - name: install packages for ubuntu distros
-    packageList:
+  - packageList:
       - bind9-utils
     osLimits: ubuntu:20.04|debian
-  - name: install packages for rh distros
-    packageList:
+  - packageList:
       - bind-utils
     osLimits: fedora|redhat|centos|arch
-  - name: install a cronjob for foo
-    jobname: foo
+  - cron: foo # give it a name
     schedule: "*/5 * * * *"
     username: foo
     cmd: cho "hello world" > /tmp/output.txt
-  - name: set nginx enabled
-    service: nginx
+  - service: nginx
     setEnabled: true
     state: started # can be started / stopped
     restartTrigger: # if these templates were altered always restart
       - /etc/nginx/nginx.conf
     restartAlways: false
     osLimits: all
-  - name: Send hup to nginx # this will be altered to include restartTrigger to watch templates like services.
-    pidFile: /var/run/nginx.pid
+  - pidFile: /var/run/nginx.pid # this will be altered to include restartTrigger to watch templates like services.
     signal: SIGHUP #currently only supports: SIGHUP / SIGINT
-  - name: extract remote tarball for my custom project
-    tarball: https://go.dev/dl/go1.19.4.linux-amd64.tar.gz
+  - tarball: https://go.dev/dl/go1.19.4.linux-amd64.tar.gz
     dest: /tmp/go
     force: true # force will overwrite if destination exists or skip with info message if false
     stripRoot: true # will strip the first directory from every path, useful if the tarball contains an initial directory

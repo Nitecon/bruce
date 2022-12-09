@@ -8,7 +8,6 @@ import (
 )
 
 type Packages struct {
-	Name        string   `yaml:"name"`
 	PackageList []string `yaml:"packageList"`
 	OsLimits    string   `yaml:"osLimits"`
 }

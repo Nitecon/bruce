@@ -9,7 +9,6 @@ import (
 )
 
 type Command struct {
-	Name     string `yaml:"name"`
 	Cmd      string `yaml:"cmd"`
 	OsLimits string `yaml:"osLimits"`
 }

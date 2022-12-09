@@ -11,7 +11,6 @@ import (
 )
 
 type Signals struct {
-	Name    string `yaml:"name"`
 	PidFile string `yaml:"pidFile"`
 	Signal  string `yaml:"signal"`
 }
