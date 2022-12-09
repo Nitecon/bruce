@@ -26,6 +26,13 @@ type Steps struct {
 func (e *Steps) UnmarshalYAML(nd *yaml.Node) error {
 	// TODO: Fix this is the near future. (maybe plugin based?)
 
+	crn := &operators.Cron{}
+	if err := nd.Decode(crn); err == nil && len(crn.Schedule) > 0 {
+		log.Debug().Msg("matching cron operator")
+		e.Action = crn
+		return nil
+	}
+
 	co := &operators.Command{}
 	if err := nd.Decode(co); err == nil && len(co.Cmd) > 0 {
 		log.Debug().Msg("matching command operator")
@@ -51,13 +58,6 @@ func (e *Steps) UnmarshalYAML(nd *yaml.Node) error {
 	if err := nd.Decode(pl); err == nil && len(pl.PackageList) > 0 {
 		log.Debug().Msg("matching package operator")
 		e.Action = pl
-		return nil
-	}
-
-	own := &operators.OwnerShip{}
-	if err := nd.Decode(own); err == nil && len(own.Path) > 0 {
-		log.Debug().Msg("matching ownership operator")
-		e.Action = own
 		return nil
 	}
 

@@ -2,7 +2,7 @@
 ## Steps are an array of operators that can be used to mutate the environment
 ## the current list of operators include:
 ## Command: enables the ability to run an arbitrary command on the system and limit the command based on specific OS
-## Ownership: Ability to chown individual / recursive directories of files
+## Cron: Creates a cronjob based on template, user is responsible for making sure cron is installed.
 ## Packages: Ability to install packages based on the locally supported os installer like dnf / yum / apt-get
 ## Services: Ability to enable / restart and reconfigure and restart services based on template updates
 ## Signals: Ability to send a signal to a particular process
@@ -36,12 +36,11 @@ steps:
     packageList:
       - bind-utils
     osLimits: fedora|redhat|centos|arch
-  - name: set ownership of files
-    type: file
-    path: /tmp/nginx.conf
-    owner: nginx
-    group: nginx
-    recursive: false
+  - name: install a cronjob for foo
+    jobname: foo
+    schedule: "*/5 * * * *"
+    username: foo
+    cmd: cho "hello world" > /tmp/output.txt
   - name: set nginx enabled
     service: nginx
     setEnabled: true
@@ -53,4 +52,3 @@ steps:
   - name: Send hup to nginx # this will be altered to include restartTrigger to watch templates like services.
     pidFile: /var/run/nginx.pid
     signal: SIGHUP #currently only supports: SIGHUP / SIGINT
-
