@@ -8,6 +8,7 @@
 ## Signals: Ability to send a signal to a particular process
 ## Templates: Ability to create templates on the system and inject variables by values from commands or provided input data.
 ## Copy: Will copy a file from several source locations [http(s)/s3/local] to a local destination
+## Tarball: Will read a tarball from [http(s)/s3/local] and extract it to a local destination of your choice.
 ##
 ## Some examples of operators as steps are shown below, see documentation on how to use.
 
@@ -52,3 +53,7 @@ steps:
   - name: Send hup to nginx # this will be altered to include restartTrigger to watch templates like services.
     pidFile: /var/run/nginx.pid
     signal: SIGHUP #currently only supports: SIGHUP / SIGINT
+  - name: extract remote tarball for my custom project
+    tarball: https://go.dev/dl/go1.19.4.linux-amd64.tar.gz
+    dest: /tmp/go
+    force: true # force will overwrite if destination exists or skip with info message if false

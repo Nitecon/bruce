@@ -40,6 +40,13 @@ func (e *Steps) UnmarshalYAML(nd *yaml.Node) error {
 		return nil
 	}
 
+	tb := &operators.Tarball{}
+	if err := nd.Decode(tb); err == nil && len(tb.Src) > 0 {
+		log.Debug().Msg("matching tarball operator")
+		e.Action = tb
+		return nil
+	}
+
 	cp := &operators.Copy{}
 	if err := nd.Decode(cp); err == nil && len(cp.Src) > 0 {
 		log.Debug().Msg("matching copy operator")
