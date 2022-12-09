@@ -24,17 +24,12 @@ func useGzipReader(filename string, fileReader io.ReadCloser) io.ReadCloser {
 	return fileReader
 }
 
-func ExtractTarball(src, dst string, force bool) error {
+func ExtractTarball(src, dst string, force, stripRoot bool) error {
 	// We just check dest currently as we will read from multiple source locations and they may fail by time we cleaned up so worthless to check upfront.
 	if _, err := os.Stat(dst); err == nil {
 		if !force {
 			log.Info().Msgf("%s already exists cannot extract tarball to location", dst)
 			return nil
-		}
-		// Destination exists and we are forcing new extraction so...
-		err = os.RemoveAll(dst)
-		if err != nil {
-			return fmt.Errorf("failed to remove destination prior to extraction: %s", dst)
 		}
 	}
 	rr, err := loader.GetRemoteReader(src)
@@ -55,6 +50,11 @@ func ExtractTarball(src, dst string, force bool) error {
 		}
 
 		target := filepath.Join(dst, header.Name)
+		if stripRoot {
+			firstDir := strings.Split(header.Name, string(os.PathSeparator))[0]
+			target = filepath.Join(dst, strings.TrimLeft(header.Name, firstDir+string(os.PathSeparator)))
+		}
+		fmt.Printf("new target: %s\n", target)
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {

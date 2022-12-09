@@ -57,3 +57,4 @@ steps:
     tarball: https://go.dev/dl/go1.19.4.linux-amd64.tar.gz
     dest: /tmp/go
     force: true # force will overwrite if destination exists or skip with info message if false
+    stripRoot: true # will strip the first directory from every path, useful if the tarball contains an initial directory

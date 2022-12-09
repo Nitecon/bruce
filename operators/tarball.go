@@ -10,6 +10,7 @@ type Tarball struct {
 	Src   string `yaml:"tarball"`
 	Dest  string `yaml:"dest"`
 	Force bool   `yaml:"force"`
+	Strip bool   `yaml:"stripRoot"`
 }
 
 func (t *Tarball) Execute() error {
@@ -17,5 +18,5 @@ func (t *Tarball) Execute() error {
 		return fmt.Errorf("source is too short")
 	}
 
-	return mutation.ExtractTarball(t.Src, t.Dest, t.Force)
+	return mutation.ExtractTarball(t.Src, t.Dest, t.Force, t.Strip)
 }

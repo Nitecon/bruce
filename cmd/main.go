@@ -43,6 +43,15 @@ func main() {
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
+			if cCtx.Args().First() != "" {
+				t, err := config.LoadConfig(cCtx.Args().First())
+				if err != nil {
+					log.Error().Err(err).Msg("cannot continue without configuration data")
+					os.Exit(1)
+				}
+				handlers.Install(t)
+				return nil
+			}
 			t, err := config.LoadConfig(cCtx.String("config"))
 			if err != nil {
 				log.Error().Err(err).Msg("cannot continue without configuration data")
