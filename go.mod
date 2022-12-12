@@ -3,7 +3,7 @@ module bruce
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.152
+	github.com/aws/aws-sdk-go v1.44.157
 	github.com/davecgh/go-spew v1.1.1
 	github.com/rs/zerolog v1.28.0
 	github.com/urfave/cli/v2 v2.23.6
