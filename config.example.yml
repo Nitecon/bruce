@@ -1,5 +1,6 @@
 ---
 ## Steps are an array of operators that can be used to mutate the environment
+## NOTE: you can have 2 of the same commands with slight deviations for OS's and by using osLimits it will prevent running on OS's that do not match.
 ## the current list of operators include:
 ## Command: enables the ability to run an arbitrary command on the system and limit the command based on specific OS
 ## Cron: Creates a cronjob based on template, user is responsible for making sure cron is installed.
@@ -9,10 +10,24 @@
 ## Templates: Ability to create templates on the system and inject variables by values from commands or provided input data.
 ## Copy: Will copy a file from several source locations [http(s)/s3/local] to a local destination
 ## Tarball: Will read a tarball from [http(s)/s3/local] and extract it to a local destination of your choice.
+## PackageRepo: Will install the associated yum/atp/dnf repository for you to be able to install packages.
 ##
 ## Some examples of operators as steps are shown below, see documentation on how to use.
 
 steps:
+  - repoName: docker
+    repoLocation: https://download.docker.com/linux/ubuntu
+    repoType: apt
+    repoKey: https://download.docker.com/linux/ubuntu/gpg
+    osLimits: ubuntu|debian
+  - repoName: docker
+    repoLocation: https://download.docker.com/linux/fedora/docker-ce.repo
+    repoType: dnf
+    osLimits: fedora|redhat
+  - repoName: docker
+    repoLocation: https://download.docker.com/linux/centos/docker-ce.repo
+    repoType: yum
+    osLimits: centos
   - cmd: echo "Hello World"
   - copy: s3://somebucket/somefile.bin
     dest: /usr/bin/somefile

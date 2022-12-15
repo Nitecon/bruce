@@ -31,3 +31,20 @@ func installDnfPackage(pkg []string, isInstall bool) bool {
 	}
 	return true
 }
+
+func installDnfRepository(name, location, key string) error {
+	installCmd := fmt.Sprintf("/usr/bin/dnf config-manager --add-repo %s", location)
+	log.Debug().Msgf("/usr/bin/dnf configuring repo %s", name)
+	install := exe.Run(installCmd, false)
+	if install.Failed() {
+		if len(install.Get()) > 0 {
+			strSplit := strings.Split(install.Get(), "\n")
+			log.Error().Err(install.GetErr())
+			for _, s := range strSplit {
+				log.Info().Msg(s)
+			}
+		}
+		return install.GetErr()
+	}
+	return nil
+}

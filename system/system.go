@@ -23,6 +23,8 @@ type SystemInfo struct {
 	OSType                string
 	OSID                  string
 	OSVersionID           string
+	OSArch                string
+	OsName                string
 	PackageHandler        string
 	PackageHandlerPath    string
 	CurrentUser           *user.User
@@ -82,6 +84,9 @@ func ReadLinuxOsData(s *SystemInfo) bool {
 			if fields[0] == "VERSION_ID" {
 				s.OSVersionID = s.wash(fields[1])
 			}
+			if fields[0] == "VERSION_CODENAME" {
+				s.OsName = s.wash(fields[1])
+			}
 			if s.OSVersionID != "" {
 				return true
 			}
@@ -90,6 +95,7 @@ func ReadLinuxOsData(s *SystemInfo) bool {
 
 		readFile.Close()
 	}
+	s.OSArch = s.wash(exe.Run("uname -m", false).Get())
 	return false
 }
 

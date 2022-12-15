@@ -23,6 +23,25 @@ func InstallOSPackage(pkgs []string, packageHandler string, isInstall bool) bool
 	return false
 }
 
+func InstallRepository(rType, name, loc, key string) error {
+	var err error
+	switch rType {
+	case "dnf":
+		err = installDnfRepository(name, loc, key)
+	case "apt":
+		err = installAptRepository(name, loc, key)
+	case "yum":
+		err = installYumRepository(name, loc, key)
+	default:
+		err = fmt.Errorf("no supported package manager")
+	}
+	if err != nil {
+		return err
+	}
+	DoPackageManagerUpdate(rType)
+	return nil
+}
+
 func GetManagerPackages(pkgs []string, manager string) []string {
 	// TODO: Do we want to honor manager to install since we have os limits now?
 	var newList []string
