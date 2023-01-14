@@ -5,16 +5,18 @@ import (
 	"strings"
 )
 
-func ReadRemoteFile(remoteLoc string) ([]byte, error) {
-	r, err := GetRemoteReader(remoteLoc)
+func ReadRemoteFile(remoteLoc string) ([]byte, string, error) {
+	r, fn, err := GetRemoteReader(remoteLoc)
 	if err != nil {
-		return nil, err
+		return nil, fn, err
 	}
 	defer r.Close()
-	return io.ReadAll(r)
+	d, err := io.ReadAll(r)
+	return d, fn, err
 }
 
-func GetRemoteReader(remoteLoc string) (io.ReadCloser, error) {
+// GetRemoteReader returns a readcloser with a filename and error if exists.
+func GetRemoteReader(remoteLoc string) (io.ReadCloser, string, error) {
 	if strings.ToLower(remoteLoc[0:4]) == "http" {
 		return ReaderFromHttp(remoteLoc)
 	}

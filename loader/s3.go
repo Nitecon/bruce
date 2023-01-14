@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"io"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
@@ -22,7 +23,8 @@ type S3Manager struct {
 	Service s3iface.S3API
 }
 
-func ReaderFromS3(fileName string) (io.ReadCloser, error) {
+func ReaderFromS3(fileName string) (io.ReadCloser, string, error) {
+	fn := path.Base(fileName)
 	if s == nil {
 		region := os.Getenv("AWS_REGION")
 		if region == "" {
@@ -32,6 +34,7 @@ func ReaderFromS3(fileName string) (io.ReadCloser, error) {
 		sess, err := session.NewSessionWithOptions(session.Options{Config: aws.Config{Region: aws.String(region), Endpoint: aws.String(fmt.Sprintf("s3.%s.amazonaws.com", region))}})
 		if err != nil {
 			log.Debug().Msg("Could not initialize AWS session")
+			return nil, fn, err
 		}
 		s.Service = s3.New(sess)
 	}
@@ -53,7 +56,7 @@ func ReaderFromS3(fileName string) (io.ReadCloser, error) {
 	})
 	if err != nil {
 		log.Debug().Err(err).Msg("fetching object from S3 failed")
-		return nil, err
+		return nil, fn, err
 	}
-	return fd.Body, nil
+	return fd.Body, fn, nil
 }

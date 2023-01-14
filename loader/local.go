@@ -4,16 +4,19 @@ import (
 	"github.com/rs/zerolog/log"
 	"io"
 	"os"
+	"path"
 )
 
-func ReaderFromLocal(fileName string) (io.ReadCloser, error) {
+func ReaderFromLocal(fileName string) (io.ReadCloser, string, error) {
+	fn := path.Base(fileName)
 	log.Debug().Msgf("starting local read of %s", fileName)
 	_, err := os.Stat(fileName)
 	if os.IsNotExist(err) {
 		log.Info().Msgf("local reader engine: (file does not exist): %s", fileName)
-		return nil, err
+		return nil, fn, err
 	}
-	return os.Open(fileName)
+	f, err := os.Open(fileName)
+	return f, fn, err
 }
 
 func WriterFromLocal(fileName string) (io.WriteCloser, error) {
