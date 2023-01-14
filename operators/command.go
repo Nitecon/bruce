@@ -13,6 +13,7 @@ type Command struct {
 	OsLimits string `yaml:"osLimits"`
 }
 
+// Execute runs the command.
 func (c *Command) Execute() error {
 	if system.Get().CanExecOnOs(c.OsLimits) {
 		if len(c.Cmd) < 1 {

@@ -1,10 +1,10 @@
 package exe
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
+	"path"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -284,6 +284,9 @@ func TestExecution_Failed(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on windows")
+	}
 	type args struct {
 		c       string
 		useSudo bool
@@ -295,34 +298,36 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name: "success",
-			args: args{c: "dir", useSudo: false},
+			args: args{c: "echo foo", useSudo: false},
 			want: &Execution{
-				input:   "dir",
-				fields:  []string{"dir"},
-				isError: true,
-				cmnd:    "dir",
-				args:    []string{},
-				err:     errors.New(`exec: "dir": executable file not found in %PATH%`),
+				input:     "echo foo",
+				fields:    []string{"echo", "foo"},
+				isError:   false,
+				cmnd:      "echo",
+				args:      []string{"foo"},
+				outputStr: "foo",
+				err:       nil,
 			},
 		},
 		{
 			name: "withSudo",
-			args: args{c: "dir", useSudo: true},
+			args: args{c: "echo foo", useSudo: true},
 			want: &Execution{
-				input:   "dir",
-				fields:  []string{"dir"},
-				isError: true,
-				cmnd:    "sudo",
-				useSudo: true,
-				args:    []string{"dir"},
-				err:     errors.New(`exec: "sudo": executable file not found in %PATH%`),
+				input:     "echo foo",
+				fields:    []string{"echo", "foo"},
+				isError:   false,
+				useSudo:   true,
+				cmnd:      "sudo",
+				args:      []string{"echo", "foo"},
+				outputStr: "foo",
+				err:       nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Run(tt.args.c, tt.args.useSudo); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Function Run()\n Got=%#v\n want%#v", got, tt.want)
+				t.Errorf("\n%#v\n want=\n%#v", got, tt.want)
 			}
 		})
 	}
@@ -567,6 +572,12 @@ func TestCopyFile(t *testing.T) {
 
 // obType, opath, owner, group string, recursive bool
 func TestSetOwnership(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on windows")
+	}
+	tf := path.Join(os.TempDir(), "testFile.txt")
+	os.WriteFile(tf, []byte("stuffhere"), 0664)
+	defer os.Remove(tf)
 	type args struct {
 		obType    string
 		opath     string
@@ -576,15 +587,13 @@ func TestSetOwnership(t *testing.T) {
 	}
 	u, err := user.Current()
 	if err != nil {
-		t.Logf("couldnt' look up current user: %s", err)
+		t.Errorf("couldnt' look up current user: %s", err)
 	}
-	t.Logf("looking up group for %s", u.Gid)
 	g, err := user.LookupGroupId(u.Gid)
 	if err != nil {
-		t.Logf("couldnt' look up group for the current user: %s", err)
-		t.Skip()
+		t.Errorf("couldnt' look up group for the current user: %s", err)
 	}
-	tf := fmt.Sprintf("%s%ctestFile.txt", os.TempDir(), os.PathSeparator)
+
 	tests := []struct {
 		name    string
 		args    args
@@ -599,8 +608,9 @@ func TestSetOwnership(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := SetOwnership(tt.args.obType, tt.args.opath, tt.args.owner, tt.args.group, tt.args.recursive); (err != nil) != tt.wantErr {
-				t.Errorf("SetOwnership() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SetOwnership() error = \n%#v\nwant\n%#v", err, tt.wantErr)
 			}
 		})
 	}
+
 }

@@ -37,6 +37,7 @@ func ExtractTarball(src, dst string, force, stripRoot bool) error {
 		log.Error().Err(err).Msgf("cannot read tarball at src: %s", src)
 		return err
 	}
+	defer rr.Close()
 	tr := tar.NewReader(useGzipReader(src, rr))
 	for {
 		header, err := tr.Next()
