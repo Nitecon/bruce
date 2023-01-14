@@ -159,7 +159,7 @@ func loadTemplateValue(v TVars) string {
 }
 
 func loadTemplateFromRemote(remoteLoc string) (*template.Template, error) {
-	d, err := loader.ReadRemoteFile(remoteLoc)
+	d, _, err := loader.ReadRemoteFile(remoteLoc)
 	if err != nil {
 		log.Error().Err(err).Msgf("could not read remote template file: %s", remoteLoc)
 	}

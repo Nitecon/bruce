@@ -48,7 +48,7 @@ func installYumRepository(name, location, key string) error {
 	}
 	defer f.Close()
 	if strings.HasSuffix(location, ".repo") {
-		r, err := loader.ReadRemoteFile(location)
+		r, _, err := loader.ReadRemoteFile(location)
 		if err != nil {
 			return err
 		}

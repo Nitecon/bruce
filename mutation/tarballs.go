@@ -32,7 +32,7 @@ func ExtractTarball(src, dst string, force, stripRoot bool) error {
 			return nil
 		}
 	}
-	rr, err := loader.GetRemoteReader(src)
+	rr, _, err := loader.GetRemoteReader(src)
 	if err != nil {
 		log.Error().Err(err).Msgf("cannot read tarball at src: %s", src)
 		return err

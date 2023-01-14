@@ -21,7 +21,7 @@ func (c *Copy) Execute() error {
 	if len(c.Src) < 1 {
 		return fmt.Errorf("source is too short")
 	}
-	source, err := loader.GetRemoteReader(c.Src)
+	source, _, err := loader.GetRemoteReader(c.Src)
 	if err != nil {
 		log.Error().Err(err).Msg("cannot open source file")
 		return err
