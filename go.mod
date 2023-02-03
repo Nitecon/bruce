@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go v1.44.189
 	github.com/davecgh/go-spew v1.1.1
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/urfave/cli/v2 v2.24.2
 	gopkg.in/yaml.v3 v3.0.1
 )
