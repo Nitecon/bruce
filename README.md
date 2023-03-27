@@ -1,5 +1,8 @@
 ==== BRUCE ====
 
+==== REPOSITORY IS DEPRECATED ====
+Please [Use update to this repository](https://github.com/configset/cfs)
+
 Basic runtime for uniform compute environments
 
 Bruce was initially intended to just operate as a more advanced exec handler for serf.  It has somewhat evolved at this point far beyond that in order to become a more stable OS configuration and installation utility.  More stable and capable as it does not require pre-existing libraries on the base OS like ansible, or agents that must be configured and associated with a chef server etc.  One of the key characteristics is the ability to load templates directly through multiple loaders.  This enables not only the ability to quickly setup a fleet by hostname as example but also to effectively bootstrap an instance on EC2 in a secure way by limiting that particular instance profile to an s3 prefix from which bruce will load the installer config.
